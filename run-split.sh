@@ -8,8 +8,18 @@ install_toyos_dock_icon
 
 ./prepare-rootfs.sh
 
-CODE=/usr/share/OVMF/OVMF_CODE.fd
-VARS_TEMPLATE=/usr/share/OVMF/OVMF_VARS.fd
+CODE="${OVMF_CODE:-/usr/share/OVMF/OVMF_CODE_4M.fd}"
+VARS_TEMPLATE="${OVMF_VARS_SRC:-/usr/share/OVMF/OVMF_VARS_4M.fd}"
+if [ ! -f "$CODE" ]; then
+    CODE=/usr/share/OVMF/OVMF_CODE.fd
+fi
+if [ ! -f "$VARS_TEMPLATE" ]; then
+    VARS_TEMPLATE=/usr/share/OVMF/OVMF_VARS.fd
+fi
+if [ ! -f "$CODE" ] || [ ! -f "$VARS_TEMPLATE" ]; then
+    echo "error: OVMF not found (install ovmf or set OVMF_CODE / OVMF_VARS_SRC)" >&2
+    exit 1
+fi
 if [ ! -f OVMF_VARS.fd.clean ]; then
     cp -f "$VARS_TEMPLATE" OVMF_VARS.fd.clean
 fi
@@ -35,6 +45,7 @@ qemu-system-x86_64 \
     -drive format=raw,file=fat:rw:.,if=ide,index=0,media=disk \
     -drive format=raw,file=fat:rw:rootfs,if=ide,index=1,media=disk \
     -m 512M \
+    -smp 2 \
     -vga std \
     -display gtk,zoom-to-fit=off \
     -device qemu-xhci,id=xhci \
