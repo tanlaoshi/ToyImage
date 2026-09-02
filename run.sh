@@ -26,6 +26,6 @@ qemu-system-x86_64 \
     -device qemu-xhci,id=xhci \
     -device usb-kbd,bus=xhci.0 \
     -device usb-tablet,bus=xhci.0 \
-    -netdev user,id=n0,hostfwd=udp::5555-:5555,hostfwd=tcp::2222-:7 \
+    -netdev user,id=n0,hostfwd=udp::5555-:5555,hostfwd=tcp::2222-:7,hostfwd=tcp::9000-:9000 \
     -device virtio-net-pci,netdev=n0 \
     -serial stdio
