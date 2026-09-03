@@ -1,4 +1,4 @@
-# Shared helpers for run-split.sh (NVRAM + args + THEME)
+# Shared helpers for run-split.sh (NVRAM + args + THEME + SMP)
 # shellcheck shell=bash
 
 toy_qemu_setup_ovmf() {
@@ -26,15 +26,105 @@ toy_qemu_setup_ovmf() {
 
 toy_qemu_parse_args() {
     CLEAN_NVRAM="${CLEAN_NVRAM:-0}"
+    TOY_KILL_QEMU="${TOY_KILL_QEMU:-0}"
+    TOY_HEADLESS="${TOY_HEADLESS:-0}"
     for Arg in "$@"; do
         case "$Arg" in
             --clean-nvram) CLEAN_NVRAM=1 ;;
+            --kill-qemu) TOY_KILL_QEMU=1 ;;
+            --headless) TOY_HEADLESS=1 ;;
+            --smp=*)
+                TOY_SMP="${Arg#--smp=}"
+                ;;
+            --smp)
+                echo "error: use --smp=N (e.g. --smp=1)" >&2
+                return 1
+                ;;
             --force-second)
                 # 兼容旧参数：现已默认只用第二盘
                 ;;
+            -h|--help)
+                cat <<'EOF'
+Usage: ./run-split.sh [options]
+
+  Dual-disk QEMU (only supported entry):
+    disk0 = cwd       ESP / Boot (EFI only after stash)
+    disk1 = rootfs/   TOYOS system volume (Kernel.elf, THEME.CFG, ELFs)
+
+Options:
+  --clean-nvram     Reset OVMF_VARS.fd from clean template
+  --kill-qemu       pkill leftover qemu-system-x86_64 before start
+  --headless        -display none (CI / smoke; serial still on stdio)
+  --smp=N           Pass -smp N (default 2; auto 1 if other QEMU exist)
+  -h, --help        This help
+
+Env:
+  TOY_SMP=N         Same as --smp=N
+  TOY_KILL_QEMU=1   Same as --kill-qemu
+  TOY_HEADLESS=1    Same as --headless
+  TOY_NO_HOSTFWD=1  Skip hostfwd (smoke/CI; avoids port bind failures)
+  TOY_QEMU_XRES/YRES  Override VGA edid (else rootfs/THEME.CFG mode=)
+  CLEAN_NVRAM=1     Same as --clean-nvram
+  OVMF_CODE / OVMF_VARS_SRC  Custom firmware paths
+
+Troubleshoot SIPI/AP timeout:
+  ./run-split.sh --kill-qemu
+  TOY_SMP=1 ./run-split.sh
+EOF
+                exit 0
+                ;;
         esac
     done
-    export CLEAN_NVRAM
+    export CLEAN_NVRAM TOY_KILL_QEMU TOY_HEADLESS
+    if [ -n "${TOY_SMP:-}" ]; then
+        export TOY_SMP
+    fi
+}
+
+# 统计其它 qemu-system-x86_64（不含本脚本即将启动的实例）
+toy_qemu_count_others() {
+    local N
+    N="$(pgrep -c -f 'qemu-system-x86_64' 2>/dev/null | head -n1 || true)"
+    N="${N:-0}"
+    case "$N" in
+        ''|*[!0-9]*) N=0 ;;
+    esac
+    printf '%s' "$N"
+}
+
+# 杀掉残留 QEMU，避免 SIPI 饿死 / AP timeout → 访客连环复位
+toy_qemu_kill_others() {
+    local N
+    N="$(toy_qemu_count_others)"
+    if [ "$N" -le 0 ]; then
+        echo "qemu: no leftover qemu-system-x86_64"
+        return 0
+    fi
+    echo "qemu: killing ${N} leftover qemu-system-x86_64 (SIPI safety)" >&2
+    pkill -9 -f 'qemu-system-x86_64' 2>/dev/null || true
+    sleep 0.3
+}
+
+# 残留实例时默认单核；可选先杀干净
+toy_qemu_prepare_smp() {
+    local Other
+    Other="$(toy_qemu_count_others)"
+
+    if [ "${TOY_KILL_QEMU:-0}" = 1 ]; then
+        toy_qemu_kill_others
+        Other=0
+    elif [ "$Other" -gt 0 ]; then
+        echo "warning: ${Other} qemu-system-x86_64 already running — SIPI/AP may timeout." >&2
+        echo "warning: re-run with --kill-qemu, or: pkill -9 -f qemu-system-x86_64" >&2
+        if [ -z "${TOY_SMP:-}" ]; then
+            TOY_SMP=1
+            echo "warning: defaulting TOY_SMP=1 while other QEMU exist" >&2
+        fi
+    fi
+
+    TOY_SMP="${TOY_SMP:-2}"
+    export TOY_SMP
+    echo "qemu: -smp ${TOY_SMP}"
 }
 
 # 从 rootfs/THEME.CFG 读 mode=WxH（系统盘为唯一权威）

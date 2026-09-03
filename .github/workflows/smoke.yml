@@ -1,0 +1,46 @@
+# Optional smoke boot with TOY_SMP=1 (PR-Q1)
+# Needs sibling ToyKernel checkout + qemu + OVMF on the runner.
+name: smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - 'run-split.sh'
+      - 'toy-qemu-lib.sh'
+      - 'smoke-boot.sh'
+      - 'prepare-rootfs.sh'
+      - '.github/workflows/smoke.yml'
+
+jobs:
+  boot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ToyImage
+        uses: actions/checkout@v4
+        with:
+          path: ToyImage
+
+      - name: Checkout ToyKernel
+        uses: actions/checkout@v4
+        with:
+          repository: tanlaoshi/ToyKernel
+          path: ToyKernel
+
+      - name: Install QEMU + OVMF
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            qemu-system-x86 ovmf gcc binutils make
+
+      - name: Build kernel into ToyImage
+        run: |
+          cd ToyKernel
+          ./build.sh x86_64
+          test -f ../ToyImage/rootfs/Kernel.elf -o -f ../ToyImage/Kernel.elf
+
+      - name: Smoke boot (TOY_SMP=1)
+        run: |
+          cd ToyImage
+          TOY_SMP=1 SMOKE_TIMEOUT=120 ./smoke-boot.sh
