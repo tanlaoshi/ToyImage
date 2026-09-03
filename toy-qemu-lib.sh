@@ -1,4 +1,4 @@
-# Shared helpers for run.sh / run-split.sh (NVRAM + args)
+# Shared helpers for run-split.sh (NVRAM + args + THEME)
 # shellcheck shell=bash
 
 toy_qemu_setup_ovmf() {
@@ -18,7 +18,7 @@ toy_qemu_setup_ovmf() {
         cp -f "$VARS_TEMPLATE" OVMF_VARS.fd.clean
     fi
     # 默认保留 NVRAM（BootOrder 等）。需要干净变量存储时：
-    #   CLEAN_NVRAM=1 ./run.sh  或  ./run.sh --clean-nvram
+    #   CLEAN_NVRAM=1 ./run-split.sh  或  ./run-split.sh --clean-nvram
     if [ "${CLEAN_NVRAM:-0}" = 1 ] || [ ! -f OVMF_VARS.fd ]; then
         cp -f OVMF_VARS.fd.clean OVMF_VARS.fd
     fi
@@ -26,20 +26,20 @@ toy_qemu_setup_ovmf() {
 
 toy_qemu_parse_args() {
     CLEAN_NVRAM="${CLEAN_NVRAM:-0}"
-    FORCE_SECOND=0
     for Arg in "$@"; do
         case "$Arg" in
             --clean-nvram) CLEAN_NVRAM=1 ;;
-            --force-second) FORCE_SECOND=1 ;;
+            --force-second)
+                # 兼容旧参数：现已默认只用第二盘
+                ;;
         esac
     done
-    export CLEAN_NVRAM FORCE_SECOND
+    export CLEAN_NVRAM
 }
 
-# 从 THEME.CFG 读 mode=WxH；供 VGA edid 首选分辨率（x86_64 无 -g）。
-# 输出：设置 TOY_QEMU_XRES / TOY_QEMU_YRES；打印一行说明。
+# 从 rootfs/THEME.CFG 读 mode=WxH（系统盘为唯一权威）
 toy_qemu_read_theme_mode() {
-    local Cfg="${1:-THEME.CFG}"
+    local Cfg="${1:-rootfs/THEME.CFG}"
     local Line W H
 
     TOY_QEMU_XRES="${TOY_QEMU_XRES:-}"
@@ -49,7 +49,6 @@ toy_qemu_read_theme_mode() {
         return 0
     fi
     if [ ! -f "$Cfg" ]; then
-        # 与 ToyBoot ScoreModeQemu 首选一致，避免 SetMode 触发 QEMU+GTK 二次复位
         TOY_QEMU_XRES=1600
         TOY_QEMU_YRES=900
         echo "qemu: VGA edid ${TOY_QEMU_XRES}x${TOY_QEMU_YRES} (default; no $Cfg)"
@@ -69,43 +68,35 @@ toy_qemu_read_theme_mode() {
     echo "qemu: VGA edid ${TOY_QEMU_XRES}x${TOY_QEMU_YRES} (from $Cfg)"
 }
 
-# Settings 写 rootfs/THEME.CFG；启动盘 cwd/THEME.CFG 常是旧副本。
-# 按 mtime 把较新的同步到另一侧；去掉 Linux 大小写重复的 theme.cfg（vvfat 易乱）。
-toy_qemu_sync_theme_cfg() {
-    local BootCfg="${1:-THEME.CFG}"
-    local RootCfg="${2:-rootfs/THEME.CFG}"
-    local RootLower
-    RootLower="$(dirname "$RootCfg")/theme.cfg"
+# 启动盘不应再挂系统文件：把 cwd 上的 Kernel/THEME/ELF 暂存到 .boot-stash/
+# QEMU 退出后还原，方便继续把构建产物丢在 ToyImage/ 再 sync 进 rootfs。
+toy_qemu_stash_boot_payloads() {
+    local Stash=".boot-stash"
+    local F
 
-    if [ -f "$RootLower" ]; then
-        if [ ! -f "$RootCfg" ] || [ "$RootLower" -nt "$RootCfg" ]; then
-            cp -f "$RootLower" "$RootCfg"
-            echo "THEME.CFG: promoted $RootLower -> $RootCfg"
+    mkdir -p "$Stash"
+    for F in Kernel.elf THEME.CFG theme.cfg LIBTOY.SO \
+        HELLO.ELF COUNT.ELF FORK.ELF CAT.ELF WRITE.ELF \
+        SYSHELLO.ELF SYSFORK.ELF WAITNH.ELF \
+        DYNDEMO.ELF NETDEMO.ELF NETSRV.ELF
+    do
+        if [ -e "$F" ]; then
+            mv -f "$F" "$Stash/$F"
         fi
-        rm -f "$RootLower"
+    done
+    if [ -d "$Stash" ] && [ -n "$(ls -A "$Stash" 2>/dev/null || true)" ]; then
+        echo "boot disk: stashed payloads -> $Stash/ (guest loads from rootfs only)"
     fi
-    if [ -f theme.cfg ]; then
-        if [ ! -f "$BootCfg" ] || [ theme.cfg -nt "$BootCfg" ]; then
-            cp -f theme.cfg "$BootCfg"
-            echo "THEME.CFG: promoted theme.cfg -> $BootCfg"
-        fi
-        rm -f theme.cfg
-    fi
+}
 
-    if [ -f "$RootCfg" ] && [ ! -f "$BootCfg" ]; then
-        cp -f "$RootCfg" "$BootCfg"
-        echo "THEME.CFG: copied $RootCfg -> $BootCfg"
-    elif [ -f "$BootCfg" ] && [ ! -f "$RootCfg" ]; then
-        mkdir -p "$(dirname "$RootCfg")"
-        cp -f "$BootCfg" "$RootCfg"
-        echo "THEME.CFG: copied $BootCfg -> $RootCfg"
-    elif [ -f "$BootCfg" ] && [ -f "$RootCfg" ]; then
-        if [ "$RootCfg" -nt "$BootCfg" ]; then
-            cp -f "$RootCfg" "$BootCfg"
-            echo "THEME.CFG: synced newer $RootCfg -> $BootCfg"
-        elif [ "$BootCfg" -nt "$RootCfg" ]; then
-            cp -f "$BootCfg" "$RootCfg"
-            echo "THEME.CFG: synced newer $BootCfg -> $RootCfg"
-        fi
-    fi
+toy_qemu_restore_boot_payloads() {
+    local Stash=".boot-stash"
+    local F
+
+    [ -d "$Stash" ] || return 0
+    for F in "$Stash"/*; do
+        [ -e "$F" ] || continue
+        mv -f "$F" "./$(basename "$F")"
+    done
+    rmdir "$Stash" 2>/dev/null || true
 }

@@ -1,5 +1,7 @@
 #!/bin/bash
-# Dual FAT: disk0=cwd (ESP/Boot), disk1=rootfs (Kernel+user ELFs)
+# 双盘 QEMU（唯一推荐入口）
+#   disk0 = cwd          → ESP/Boot（仅 EFI/BOOT/BOOTX64.EFI 等）
+#   disk1 = rootfs/      → TOYOS 系统盘（Kernel.elf、THEME.CFG、用户 ELF）
 set -e
 cd "$(dirname "$0")"
 
@@ -10,20 +12,32 @@ install_toyos_dock_icon
 
 toy_qemu_parse_args "$@"
 ./prepare-rootfs.sh
-# Settings 写在 rootfs；按 mtime 与启动盘 THEME.CFG 双向同步（勿用启动盘旧文件覆盖）
-toy_qemu_sync_theme_cfg THEME.CFG rootfs/THEME.CFG
-toy_qemu_read_theme_mode THEME.CFG
 
+# edid 只读系统盘主题，避免与启动盘旧 THEME.CFG 冲突
+toy_qemu_read_theme_mode rootfs/THEME.CFG
 toy_qemu_setup_ovmf
 
-if [ "$FORCE_SECOND" = 1 ] && [ -f Kernel.elf ]; then
-    mv -f Kernel.elf Kernel.elf.onboot
-    echo "Moved Kernel.elf aside -> boot volume has no kernel (use disk1)"
-    trap 'mv -f Kernel.elf.onboot Kernel.elf 2>/dev/null || true' EXIT
+# pgrep -c 在无匹配时仍打印 0 且 exit=1；不能用 || echo 0（会变成 "0\n0"）
+OTHER_QEMU="$(pgrep -c -f 'qemu-system-x86_64' 2>/dev/null | head -n1)"
+OTHER_QEMU="${OTHER_QEMU:-0}"
+case "$OTHER_QEMU" in
+    ''|*[!0-9]*) OTHER_QEMU=0 ;;
+esac
+if [ "$OTHER_QEMU" -gt 0 ]; then
+    echo "warning: ${OTHER_QEMU} qemu-system-x86_64 already running — SIPI/AP may timeout. Kill leftovers first." >&2
+    if [ -z "${TOY_SMP:-}" ]; then
+        TOY_SMP=1
+        echo "warning: defaulting TOY_SMP=1 while other QEMU exist" >&2
+    fi
 fi
 
-# 不用 -vga std：显式 VGA+edid 首选分辨率，减轻 ToyBoot SetMode 后 GTK 跳变导致的二次复位。
-# x86_64 无 -g；zoom-to-fit=off 让窗口跟 guest 分辨率走。
+# 启动期间启动盘不含 Kernel/THEME，强制 Guest 走第二盘
+toy_qemu_stash_boot_payloads
+trap 'toy_qemu_restore_boot_payloads' EXIT
+
+TOY_SMP="${TOY_SMP:-2}"
+
+# 不用 -vga std：显式 VGA+edid；zoom-to-fit=off 让窗口跟 guest 分辨率走。
 qemu-system-x86_64 \
     -name "ToyOS",process=qemu-system-x86_64 \
     -drive if=pflash,format=raw,readonly=on,file="$CODE" \
@@ -31,7 +45,7 @@ qemu-system-x86_64 \
     -drive format=raw,file=fat:rw:.,if=ide,index=0,media=disk \
     -drive format=raw,file=fat:rw:rootfs,if=ide,index=1,media=disk \
     -m 512M \
-    -smp 2 \
+    -smp "$TOY_SMP" \
     -device VGA,edid=on,xres="${TOY_QEMU_XRES}",yres="${TOY_QEMU_YRES}" \
     -display gtk,zoom-to-fit=off \
     -device qemu-xhci,id=xhci \
@@ -39,4 +53,5 @@ qemu-system-x86_64 \
     -device usb-tablet,bus=xhci.0 \
     -netdev user,id=n0,hostfwd=udp::5555-:5555,hostfwd=tcp::2222-:7,hostfwd=tcp::9000-:9000 \
     -device virtio-net-pci,netdev=n0 \
-    -serial stdio
+    -serial stdio \
+    -no-reboot
