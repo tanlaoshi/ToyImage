@@ -36,6 +36,38 @@ toy_qemu_parse_args() {
     export CLEAN_NVRAM FORCE_SECOND
 }
 
+# 从 THEME.CFG 读 mode=WxH；供 VGA edid 首选分辨率（x86_64 无 -g）。
+# 输出：设置 TOY_QEMU_XRES / TOY_QEMU_YRES；打印一行说明。
+toy_qemu_read_theme_mode() {
+    local Cfg="${1:-THEME.CFG}"
+    local Line W H
+
+    TOY_QEMU_XRES="${TOY_QEMU_XRES:-}"
+    TOY_QEMU_YRES="${TOY_QEMU_YRES:-}"
+    if [ -n "$TOY_QEMU_XRES" ] && [ -n "$TOY_QEMU_YRES" ]; then
+        echo "qemu: VGA edid ${TOY_QEMU_XRES}x${TOY_QEMU_YRES} (env override)"
+        return 0
+    fi
+    if [ ! -f "$Cfg" ]; then
+        TOY_QEMU_XRES=1024
+        TOY_QEMU_YRES=768
+        echo "qemu: VGA edid ${TOY_QEMU_XRES}x${TOY_QEMU_YRES} (default; no $Cfg)"
+        return 0
+    fi
+    Line="$(grep -E '^[[:space:]]*mode=' "$Cfg" | head -1 || true)"
+    W="$(printf '%s' "$Line" | sed -n 's/.*mode=\([0-9][0-9]*\)[xX]\([0-9][0-9]*\).*/\1/p')"
+    H="$(printf '%s' "$Line" | sed -n 's/.*mode=\([0-9][0-9]*\)[xX]\([0-9][0-9]*\).*/\2/p')"
+    if [ -z "$W" ] || [ -z "$H" ]; then
+        TOY_QEMU_XRES=1024
+        TOY_QEMU_YRES=768
+        echo "qemu: VGA edid ${TOY_QEMU_XRES}x${TOY_QEMU_YRES} (default; no mode= in $Cfg)"
+        return 0
+    fi
+    TOY_QEMU_XRES="$W"
+    TOY_QEMU_YRES="$H"
+    echo "qemu: VGA edid ${TOY_QEMU_XRES}x${TOY_QEMU_YRES} (from $Cfg)"
+}
+
 # Settings 写 rootfs/THEME.CFG；启动盘 cwd/THEME.CFG 常是旧副本。
 # 按 mtime 把较新的同步到另一侧；去掉 Linux 大小写重复的 theme.cfg（vvfat 易乱）。
 toy_qemu_sync_theme_cfg() {

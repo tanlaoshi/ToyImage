@@ -10,6 +10,7 @@ install_toyos_dock_icon
 . ./toy-qemu-lib.sh
 
 toy_qemu_parse_args "$@"
+toy_qemu_read_theme_mode THEME.CFG
 toy_qemu_setup_ovmf
 
 qemu-system-x86_64 \
@@ -19,7 +20,7 @@ qemu-system-x86_64 \
     -drive format=raw,file=fat:rw:. \
     -m 512M \
     -smp 2 \
-    -vga std \
+    -device VGA,edid=on,xres="${TOY_QEMU_XRES}",yres="${TOY_QEMU_YRES}" \
     -display gtk,zoom-to-fit=off \
     -device qemu-xhci,id=xhci \
     -device usb-kbd,bus=xhci.0 \
