@@ -9,7 +9,7 @@ if [ ! -f Kernel.elf ]; then
     exit 1
 fi
 cp -f Kernel.elf "$ROOT/Kernel.elf"
-for F in HELLO.ELF COUNT.ELF FORK.ELF CAT.ELF WRITE.ELF; do
+for F in HELLO.ELF COUNT.ELF FORK.ELF CAT.ELF WRITE.ELF SYSHELLO.ELF SYSFORK.ELF; do
     if [ -f "$F" ]; then cp -f "$F" "$ROOT/$F"; fi
 done
 printf "ToyOS root volume\n" > "$ROOT/TOYOS.ID"
