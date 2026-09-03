@@ -5,32 +5,15 @@ cd "$(dirname "$0")"
 
 . ./dock-icon.sh
 install_toyos_dock_icon
+# shellcheck source=toy-qemu-lib.sh
+. ./toy-qemu-lib.sh
 
+toy_qemu_parse_args "$@"
 ./prepare-rootfs.sh
+# Settings 写在 rootfs；按 mtime 与启动盘 THEME.CFG 双向同步（勿用启动盘旧文件覆盖）
+toy_qemu_sync_theme_cfg THEME.CFG rootfs/THEME.CFG
 
-CODE="${OVMF_CODE:-/usr/share/OVMF/OVMF_CODE_4M.fd}"
-VARS_TEMPLATE="${OVMF_VARS_SRC:-/usr/share/OVMF/OVMF_VARS_4M.fd}"
-if [ ! -f "$CODE" ]; then
-    CODE=/usr/share/OVMF/OVMF_CODE.fd
-fi
-if [ ! -f "$VARS_TEMPLATE" ]; then
-    VARS_TEMPLATE=/usr/share/OVMF/OVMF_VARS.fd
-fi
-if [ ! -f "$CODE" ] || [ ! -f "$VARS_TEMPLATE" ]; then
-    echo "error: OVMF not found (install ovmf or set OVMF_CODE / OVMF_VARS_SRC)" >&2
-    exit 1
-fi
-if [ ! -f OVMF_VARS.fd.clean ]; then
-    cp -f "$VARS_TEMPLATE" OVMF_VARS.fd.clean
-fi
-cp -f OVMF_VARS.fd.clean OVMF_VARS.fd
-
-FORCE_SECOND=0
-for Arg in "$@"; do
-    case "$Arg" in
-        --force-second) FORCE_SECOND=1 ;;
-    esac
-done
+toy_qemu_setup_ovmf
 
 if [ "$FORCE_SECOND" = 1 ] && [ -f Kernel.elf ]; then
     mv -f Kernel.elf Kernel.elf.onboot
