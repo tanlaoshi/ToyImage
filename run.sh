@@ -10,6 +10,8 @@ install_toyos_dock_icon
 . ./toy-qemu-lib.sh
 
 toy_qemu_parse_args "$@"
+# Settings/FAT 可能写出 theme.cfg；先提升为 THEME.CFG 再读 mode=（与 run-split 一致）
+toy_qemu_sync_theme_cfg THEME.CFG rootfs/THEME.CFG
 toy_qemu_read_theme_mode THEME.CFG
 toy_qemu_setup_ovmf
 

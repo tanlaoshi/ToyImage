@@ -49,8 +49,9 @@ toy_qemu_read_theme_mode() {
         return 0
     fi
     if [ ! -f "$Cfg" ]; then
-        TOY_QEMU_XRES=1024
-        TOY_QEMU_YRES=768
+        # 与 ToyBoot ScoreModeQemu 首选一致，避免 SetMode 触发 QEMU+GTK 二次复位
+        TOY_QEMU_XRES=1600
+        TOY_QEMU_YRES=900
         echo "qemu: VGA edid ${TOY_QEMU_XRES}x${TOY_QEMU_YRES} (default; no $Cfg)"
         return 0
     fi
@@ -58,8 +59,8 @@ toy_qemu_read_theme_mode() {
     W="$(printf '%s' "$Line" | sed -n 's/.*mode=\([0-9][0-9]*\)[xX]\([0-9][0-9]*\).*/\1/p')"
     H="$(printf '%s' "$Line" | sed -n 's/.*mode=\([0-9][0-9]*\)[xX]\([0-9][0-9]*\).*/\2/p')"
     if [ -z "$W" ] || [ -z "$H" ]; then
-        TOY_QEMU_XRES=1024
-        TOY_QEMU_YRES=768
+        TOY_QEMU_XRES=1600
+        TOY_QEMU_YRES=900
         echo "qemu: VGA edid ${TOY_QEMU_XRES}x${TOY_QEMU_YRES} (default; no mode= in $Cfg)"
         return 0
     fi
