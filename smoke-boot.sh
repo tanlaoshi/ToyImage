@@ -28,6 +28,7 @@ fi
 
 echo "smoke: TOY_SMP=${TOY_SMP} timeout=${TIMEOUT_SEC}s log=${LOG}"
 rm -f "$LOG"
+: >"$LOG"
 ./run-split.sh --kill-qemu --headless --smp="${TOY_SMP}" >"$LOG" 2>&1 &
 QEMU_PID=$!
 
