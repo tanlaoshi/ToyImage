@@ -34,8 +34,9 @@ QEMU_PID=$!
 i=0
 while [ "$i" -lt "$TIMEOUT_SEC" ]; do
     # 去掉 CR，避免某些 grep 把串口日志当怪异文本
-    if tr -d '\r' <"$LOG" 2>/dev/null | grep -F 'ToyOS ready' >/dev/null 2>&1; then
-        echo "smoke: PASS — found 'ToyOS ready'"
+    # PR-I18N2：就绪串可中/英（lang=zh →「ToyOS 就绪」）
+    if tr -d '\r' <"$LOG" 2>/dev/null | grep -E 'ToyOS ready|ToyOS 就绪' >/dev/null 2>&1; then
+        echo "smoke: PASS — found ToyOS ready/就绪"
         tr -d '\r' <"$LOG" | grep -F 'smp: APs started=' | tail -1 || true
         tr -d '\r' <"$LOG" | grep -F 'smp: continue single-CPU' | tail -1 || true
         exit 0
