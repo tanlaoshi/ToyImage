@@ -168,6 +168,7 @@ toy_qemu_stash_boot_payloads() {
     for F in Kernel.elf THEME.CFG theme.cfg LIBTOY.SO \
         HELLO.ELF COUNT.ELF FORK.ELF CAT.ELF WRITE.ELF \
         SYSHELLO.ELF SYSFORK.ELF WAITNH.ELF \
+        EXECDEMO.ELF PIPEDEMO.ELF BRKDEMO.ELF KILLDEMO.ELF \
         DYNDEMO.ELF NETDEMO.ELF NETSRV.ELF
     do
         if [ -e "$F" ]; then
