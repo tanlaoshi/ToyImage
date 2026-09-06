@@ -50,6 +50,13 @@ while [ "$i" -lt "$TIMEOUT_SEC" ]; do
         fi
         tr -d '\r' <"$LOG" | grep -F 'smp: APs started=' | tail -1 || true
         tr -d '\r' <"$LOG" | grep -F 'smp: continue single-CPU' | tail -1 || true
+        # PR-H2：课堂 QEMU 应有 USB 键盘 ready（真机可能是 PS2）
+        if tr -d '\r' <"$LOG" | grep -E 'boot: xhci-hid keyboard|boot: ps2-kbd keyboard' >/dev/null 2>&1; then
+            echo "smoke: PASS — keyboard backend (PR-H2)"
+            tr -d '\r' <"$LOG" | grep -E 'boot: xhci-hid keyboard|boot: ps2-kbd keyboard' | tail -1 || true
+        else
+            echo "smoke: WARN — no boot: *keyboard line (headless may still PASS)" >&2
+        fi
         exit 0
     fi
     if ! kill -0 "$QEMU_PID" 2>/dev/null; then
