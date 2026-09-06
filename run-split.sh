@@ -9,6 +9,7 @@
 #   TOY_SMP=1 ./run-split.sh            # 宿主忙或 CI 用单核
 #   ./run-split.sh --headless           # 无图形（冒烟 / CI）
 #   TOY_DISK=ahci ./run-split.sh        # PR-H1：AHCI 第二 Block（非 IDE）
+#   TOY_DISK=nvme ./run-split.sh        # PR-H5：NVMe Block
 #   ./smoke-boot.sh                     # 自动 headless+kill，等 ToyOS ready
 set -e
 cd "$(dirname "$0")"
@@ -41,7 +42,7 @@ if [ "${TOY_NO_HOSTFWD:-0}" != 1 ]; then
     NETDEV_ARGS=(user,id=n0,hostfwd=udp::5555-:5555,hostfwd=tcp::2222-:7,hostfwd=tcp::9000-:9000)
 fi
 
-# 存储：默认 IDE（课堂 ATA PIO）；TOY_DISK=ahci → ich9-ahci（PR-H1 验收）
+# 存储：默认 IDE；TOY_DISK=ahci（H1）/ nvme（H5）
 # bootindex：干净 NVRAM 时仍优先从 ESP 找 \EFI\BOOT\BOOTX64.EFI
 DISK_ARGS=()
 case "${TOY_DISK:-ide}" in
@@ -53,6 +54,15 @@ case "${TOY_DISK:-ide}" in
             -device ide-hd,drive=toyesp,bus=ahci.0,bootindex=0
             -drive if=none,id=toyroot,format=raw,file=fat:rw:rootfs
             -device ide-hd,drive=toyroot,bus=ahci.1,bootindex=1
+        )
+        ;;
+    nvme|NVMe|NVME)
+        echo "qemu: disk=nvme (PR-H5)"
+        DISK_ARGS=(
+            -drive if=none,id=toyesp,format=raw,file=fat:rw:.
+            -device nvme,serial=toyesp,drive=toyesp,logical_block_size=512,physical_block_size=512,bootindex=0
+            -drive if=none,id=toyroot,format=raw,file=fat:rw:rootfs
+            -device nvme,serial=toyroot,drive=toyroot,logical_block_size=512,physical_block_size=512,bootindex=1
         )
         ;;
     *)

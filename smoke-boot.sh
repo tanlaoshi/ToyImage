@@ -48,6 +48,16 @@ while [ "$i" -lt "$TIMEOUT_SEC" ]; do
                 exit 1
             fi
         fi
+        if [ "${TOY_DISK:-ide}" = "nvme" ] || [ "${TOY_DISK:-}" = "NVME" ] || [ "${TOY_DISK:-}" = "NVMe" ]; then
+            if tr -d '\r' <"$LOG" | grep -F 'boot: nvme drives=' >/dev/null 2>&1; then
+                echo "smoke: PASS — NVMe backend (PR-H5)"
+                tr -d '\r' <"$LOG" | grep -F 'boot: nvme drives=' | tail -1 || true
+            else
+                echo "smoke: FAIL — TOY_DISK=nvme but no boot: nvme line" >&2
+                tr -d '\r' <"$LOG" | grep -E 'nvme|block:|ata' | tail -20 >&2 || true
+                exit 1
+            fi
+        fi
         tr -d '\r' <"$LOG" | grep -F 'smp: APs started=' | tail -1 || true
         tr -d '\r' <"$LOG" | grep -F 'smp: continue single-CPU' | tail -1 || true
         # PR-H2：课堂 QEMU 应有 USB 键盘 ready（真机可能是 PS2）
