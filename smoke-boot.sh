@@ -26,7 +26,7 @@ if [ ! -f rootfs/Kernel.elf ] && [ ! -f Kernel.elf ]; then
     exit 1
 fi
 
-echo "smoke: TOY_SMP=${TOY_SMP} timeout=${TIMEOUT_SEC}s log=${LOG}"
+echo "smoke: TOY_SMP=${TOY_SMP} TOY_DISK=${TOY_DISK:-ide} timeout=${TIMEOUT_SEC}s log=${LOG}"
 rm -f "$LOG"
 : >"$LOG"
 ./run-split.sh --kill-qemu --headless --smp="${TOY_SMP}" >"$LOG" 2>&1 &
@@ -38,6 +38,16 @@ while [ "$i" -lt "$TIMEOUT_SEC" ]; do
     # PR-I18N2：就绪串可中/英（lang=zh →「ToyOS 就绪」）
     if tr -d '\r' <"$LOG" 2>/dev/null | grep -E 'ToyOS ready|ToyOS 就绪' >/dev/null 2>&1; then
         echo "smoke: PASS — found ToyOS ready/就绪"
+        if [ "${TOY_DISK:-ide}" = "ahci" ] || [ "${TOY_DISK:-}" = "AHCI" ]; then
+            if tr -d '\r' <"$LOG" | grep -F 'boot: ahci drives=' >/dev/null 2>&1; then
+                echo "smoke: PASS — AHCI backend (PR-H1)"
+                tr -d '\r' <"$LOG" | grep -F 'boot: ahci drives=' | tail -1 || true
+            else
+                echo "smoke: FAIL — TOY_DISK=ahci but no boot: ahci line" >&2
+                tr -d '\r' <"$LOG" | grep -E 'ahci|block:|ata' | tail -20 >&2 || true
+                exit 1
+            fi
+        fi
         tr -d '\r' <"$LOG" | grep -F 'smp: APs started=' | tail -1 || true
         tr -d '\r' <"$LOG" | grep -F 'smp: continue single-CPU' | tail -1 || true
         exit 0

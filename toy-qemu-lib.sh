@@ -16,10 +16,18 @@ toy_qemu_setup_ovmf() {
     fi
     if [ ! -f OVMF_VARS.fd.clean ]; then
         cp -f "$VARS_TEMPLATE" OVMF_VARS.fd.clean
+    elif [ "$(stat -c%s OVMF_VARS.fd.clean 2>/dev/null || echo 0)" != \
+          "$(stat -c%s "$VARS_TEMPLATE" 2>/dev/null || echo 1)" ]; then
+        # CODE_4M 配旧 128K VARS 会丢 BootOrder / 进 EFI Shell
+        cp -f "$VARS_TEMPLATE" OVMF_VARS.fd.clean
+        CLEAN_NVRAM=1
     fi
     # 默认保留 NVRAM（BootOrder 等）。需要干净变量存储时：
     #   CLEAN_NVRAM=1 ./run-split.sh  或  ./run-split.sh --clean-nvram
     if [ "${CLEAN_NVRAM:-0}" = 1 ] || [ ! -f OVMF_VARS.fd ]; then
+        cp -f OVMF_VARS.fd.clean OVMF_VARS.fd
+    elif [ "$(stat -c%s OVMF_VARS.fd 2>/dev/null || echo 0)" != \
+          "$(stat -c%s OVMF_VARS.fd.clean 2>/dev/null || echo 1)" ]; then
         cp -f OVMF_VARS.fd.clean OVMF_VARS.fd
     fi
 }
@@ -63,6 +71,7 @@ Env:
   TOY_KILL_QEMU=1   Same as --kill-qemu
   TOY_HEADLESS=1    Same as --headless
   TOY_NO_HOSTFWD=1  Skip hostfwd (smoke/CI; avoids port bind failures)
+  TOY_DISK=ahci     Use ich9-ahci instead of IDE (PR-H1 AHCI Block)
   TOY_QEMU_XRES/YRES  Override VGA edid (else rootfs/THEME.CFG mode=)
   CLEAN_NVRAM=1     Same as --clean-nvram
   OVMF_CODE / OVMF_VARS_SRC  Custom firmware paths
