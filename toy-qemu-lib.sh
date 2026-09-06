@@ -73,6 +73,7 @@ Env:
   TOY_NO_HOSTFWD=1  Skip hostfwd (smoke/CI; avoids port bind failures)
   TOY_DISK=ahci     Use ich9-ahci instead of IDE (PR-H1 AHCI Block)
   TOY_DISK=nvme     Use PCIe NVMe instead of IDE (PR-H5 NVMe Block)
+  TOY_NET=e1000     Use Intel e1000 instead of virtio-net (PR-H4)
   TOY_QEMU_XRES/YRES  Override VGA edid (else rootfs/THEME.CFG mode=)
   CLEAN_NVRAM=1     Same as --clean-nvram
   OVMF_CODE / OVMF_VARS_SRC  Custom firmware paths

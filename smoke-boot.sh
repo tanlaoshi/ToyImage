@@ -26,7 +26,7 @@ if [ ! -f rootfs/Kernel.elf ] && [ ! -f Kernel.elf ]; then
     exit 1
 fi
 
-echo "smoke: TOY_SMP=${TOY_SMP} TOY_DISK=${TOY_DISK:-ide} timeout=${TIMEOUT_SEC}s log=${LOG}"
+echo "smoke: TOY_SMP=${TOY_SMP} TOY_DISK=${TOY_DISK:-ide} TOY_NET=${TOY_NET:-virtio} timeout=${TIMEOUT_SEC}s log=${LOG}"
 rm -f "$LOG"
 : >"$LOG"
 ./run-split.sh --kill-qemu --headless --smp="${TOY_SMP}" >"$LOG" 2>&1 &
@@ -70,6 +70,16 @@ while [ "$i" -lt "$TIMEOUT_SEC" ]; do
         # PR-H3：默认应有 COM1（QEMU）；无则走 GOP（NO_COM1=1）
         if tr -d '\r' <"$LOG" | grep -F 'boot: COM1 serial ok' >/dev/null 2>&1; then
             echo "smoke: PASS — COM1 serial (PR-H3)"
+        fi
+        # PR-H4：TOY_NET=e1000 时应见 boot: e1000
+        if [ "${TOY_NET:-virtio}" = "e1000" ] || [ "${TOY_NET:-}" = "E1000" ]; then
+            if tr -d '\r' <"$LOG" | grep -F 'boot: e1000' >/dev/null 2>&1; then
+                echo "smoke: PASS — e1000 backend (PR-H4)"
+            else
+                echo "smoke: FAIL — TOY_NET=e1000 but no boot: e1000 line" >&2
+                tr -d '\r' <"$LOG" | grep -E 'e1000|net:|virtio' | tail -20 >&2 || true
+                exit 1
+            fi
         fi
         exit 0
     fi

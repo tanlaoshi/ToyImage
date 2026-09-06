@@ -10,6 +10,7 @@
 #   ./run-split.sh --headless           # 无图形（冒烟 / CI）
 #   TOY_DISK=ahci ./run-split.sh        # PR-H1：AHCI 第二 Block（非 IDE）
 #   TOY_DISK=nvme ./run-split.sh        # PR-H5：NVMe Block
+#   TOY_NET=e1000 ./run-split.sh        # PR-H4：e1000 代替 virtio-net
 #   ./smoke-boot.sh                     # 自动 headless+kill，等 ToyOS ready
 set -e
 cd "$(dirname "$0")"
@@ -76,6 +77,18 @@ case "${TOY_DISK:-ide}" in
         ;;
 esac
 
+# 网卡：默认 virtio-net-pci；TOY_NET=e1000 → Intel e1000（PR-H4）
+NET_ARGS=()
+case "${TOY_NET:-virtio}" in
+    e1000|E1000)
+        echo "qemu: net=e1000 (PR-H4)"
+        NET_ARGS=(-device e1000,netdev=n0)
+        ;;
+    *)
+        NET_ARGS=(-device virtio-net-pci,netdev=n0)
+        ;;
+esac
+
 # 不用 -vga std：显式 VGA+edid；zoom-to-fit=off 让窗口跟 guest 分辨率走。
 qemu-system-x86_64 \
     -name "ToyOS",process=qemu-system-x86_64 \
@@ -90,6 +103,6 @@ qemu-system-x86_64 \
     -device usb-kbd,bus=xhci.0 \
     -device usb-tablet,bus=xhci.0 \
     -netdev "${NETDEV_ARGS[@]}" \
-    -device virtio-net-pci,netdev=n0 \
+    "${NET_ARGS[@]}" \
     -serial stdio \
     -no-reboot
