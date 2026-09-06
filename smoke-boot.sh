@@ -57,6 +57,10 @@ while [ "$i" -lt "$TIMEOUT_SEC" ]; do
         else
             echo "smoke: WARN — no boot: *keyboard line (headless may still PASS)" >&2
         fi
+        # PR-H3：默认应有 COM1（QEMU）；无则走 GOP（NO_COM1=1）
+        if tr -d '\r' <"$LOG" | grep -F 'boot: COM1 serial ok' >/dev/null 2>&1; then
+            echo "smoke: PASS — COM1 serial (PR-H3)"
+        fi
         exit 0
     fi
     if ! kill -0 "$QEMU_PID" 2>/dev/null; then
