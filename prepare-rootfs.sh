@@ -76,6 +76,24 @@ if [ ! -f "$ROOT/Assets/Fonts/VGA8X16.FNT" ] && [ -d ../ToyKernel/Assets/Fonts ]
     mkdir -p "$ROOT/Assets/Fonts"
     cp -a ../ToyKernel/Assets/Fonts/. "$ROOT/Assets/Fonts/"
 fi
+if [ ! -f "$ROOT/Assets/Store/catalog.txt" ] && [ -d ../ToyKernel/Assets/Store ]; then
+    mkdir -p "$ROOT/Assets/Store"
+    cp -a ../ToyKernel/Assets/Store/. "$ROOT/Assets/Store/"
+fi
+# PR-S0：已安装 / 缓存目录占位
+mkdir -p "$ROOT/Apps" "$ROOT/Store"
+if [ -d ../ToyKernel/Apps ]; then
+    cp -a ../ToyKernel/Apps/. "$ROOT/Apps/" 2>/dev/null || true
+fi
+if [ -d ../ToyKernel/Store ]; then
+    cp -a ../ToyKernel/Store/. "$ROOT/Store/" 2>/dev/null || true
+fi
+if [ -d Apps ]; then
+    cp -a Apps/. "$ROOT/Apps/" 2>/dev/null || true
+fi
+if [ -d Store ]; then
+    cp -a Store/. "$ROOT/Store/" 2>/dev/null || true
+fi
 
 printf "ToyOS root volume\n" > "$ROOT/TOYOS.ID"
 echo "Prepared $ROOT (TOYOS system disk):"
