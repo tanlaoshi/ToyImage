@@ -49,6 +49,27 @@ do
     fi
 done
 
+# 运行时资源（Assets/Icons、Assets/Images）— 不链入 Kernel.elf
+mkdir -p "$ROOT/Assets/Icons" "$ROOT/Assets/Images"
+if [ -d Assets ]; then
+    cp -a Assets/. "$ROOT/Assets/"
+fi
+# 兼容旧扁平 WALL.BMP
+if [ -f WALL.BMP ]; then
+    cp -f WALL.BMP "$ROOT/Assets/Images/WALL.BMP"
+    rm -f WALL.BMP
+fi
+rm -f "$ROOT/WALL.BMP"
+# 仓库侧兜底（cwd 未带 Assets 时）
+if [ ! -f "$ROOT/Assets/Images/WALL.BMP" ] && [ -f ../ToyKernel/Assets/Images/WALL.BMP ]; then
+    cp -f ../ToyKernel/Assets/Images/WALL.BMP "$ROOT/Assets/Images/WALL.BMP"
+fi
+if [ ! -f "$ROOT/Assets/Icons/bmp48/SHELL.BMP" ] && [ -d ../ToyKernel/Assets/Icons ]; then
+    mkdir -p "$ROOT/Assets/Icons"
+    cp -a ../ToyKernel/Assets/Icons/. "$ROOT/Assets/Icons/"
+fi
+
 printf "ToyOS root volume\n" > "$ROOT/TOYOS.ID"
 echo "Prepared $ROOT (TOYOS system disk):"
 ls -lh "$ROOT"
+find "$ROOT/Assets" -type f 2>/dev/null | sort || true
