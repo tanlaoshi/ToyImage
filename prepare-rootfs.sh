@@ -68,6 +68,10 @@ if [ ! -f "$ROOT/Assets/Icons/bmp48/SHELL.BMP" ] && [ -d ../ToyKernel/Assets/Ico
     mkdir -p "$ROOT/Assets/Icons"
     cp -a ../ToyKernel/Assets/Icons/. "$ROOT/Assets/Icons/"
 fi
+if [ ! -f "$ROOT/Assets/Locale/en.txt" ] && [ -d ../ToyKernel/Assets/Locale ]; then
+    mkdir -p "$ROOT/Assets/Locale"
+    cp -a ../ToyKernel/Assets/Locale/. "$ROOT/Assets/Locale/"
+fi
 
 printf "ToyOS root volume\n" > "$ROOT/TOYOS.ID"
 echo "Prepared $ROOT (TOYOS system disk):"
