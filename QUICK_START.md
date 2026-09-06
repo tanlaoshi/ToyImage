@@ -47,3 +47,10 @@ TOY_SMP=2 ./smoke-boot.sh       # 可选双核冒烟
 ```
 
 成功条件：串口日志出现 `ToyOS ready`。
+
+## 真机 U 盘（PR-H0）
+
+课堂双盘可压成 U 盘 ESP + TOYOS FAT。目标机约定、GOP 亮屏验收与已知缺口：
+
+→ [`../ToyKernel/HAL/X64/NOTES-UEFI-PC.md`](../ToyKernel/HAL/X64/NOTES-UEFI-PC.md)  
+→ [`../ToyBoot/README.md`](../ToyBoot/README.md)（Real PC 节）
