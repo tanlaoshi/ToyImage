@@ -72,6 +72,10 @@ if [ ! -f "$ROOT/Assets/Locale/en.txt" ] && [ -d ../ToyKernel/Assets/Locale ]; t
     mkdir -p "$ROOT/Assets/Locale"
     cp -a ../ToyKernel/Assets/Locale/. "$ROOT/Assets/Locale/"
 fi
+if [ ! -f "$ROOT/Assets/Fonts/VGA8X16.FNT" ] && [ -d ../ToyKernel/Assets/Fonts ]; then
+    mkdir -p "$ROOT/Assets/Fonts"
+    cp -a ../ToyKernel/Assets/Fonts/. "$ROOT/Assets/Fonts/"
+fi
 
 printf "ToyOS root volume\n" > "$ROOT/TOYOS.ID"
 echo "Prepared $ROOT (TOYOS system disk):"
