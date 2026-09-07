@@ -30,25 +30,26 @@ if [ -n "$KERNEL_SRC" ]; then
     fi
 fi
 
-# 主题：优先 rootfs；若仅 cwd 有则迁入；两边都有时取较新
+# 主题：rootfs/THEME.CFG 是唯一权威（Guest Settings / QEMU edid 都认它）。
+# 勿用 cwd 上较新的旧副本盖掉系统盘（stash 还原曾导致 1280x720→1600x900）。
 if [ -f theme.cfg ]; then
-    if [ ! -f THEME.CFG ] || [ theme.cfg -nt THEME.CFG ]; then
+    if [ ! -f THEME.CFG ]; then
         cp -f theme.cfg THEME.CFG
     fi
     rm -f theme.cfg
 fi
 if [ -f "$ROOT/theme.cfg" ]; then
-    if [ ! -f "$ROOT/THEME.CFG" ] || [ "$ROOT/theme.cfg" -nt "$ROOT/THEME.CFG" ]; then
+    if [ ! -f "$ROOT/THEME.CFG" ]; then
         cp -f "$ROOT/theme.cfg" "$ROOT/THEME.CFG"
     fi
     rm -f "$ROOT/theme.cfg"
 fi
-if [ -f THEME.CFG ] && [ ! -f "$ROOT/THEME.CFG" ]; then
+if [ -f "$ROOT/THEME.CFG" ]; then
+    # 镜像到 cwd 仅供查看；绝不反向覆盖 rootfs
+    cp -f "$ROOT/THEME.CFG" THEME.CFG
+elif [ -f THEME.CFG ]; then
     cp -f THEME.CFG "$ROOT/THEME.CFG"
-elif [ -f THEME.CFG ] && [ -f "$ROOT/THEME.CFG" ]; then
-    if [ THEME.CFG -nt "$ROOT/THEME.CFG" ]; then
-        cp -f THEME.CFG "$ROOT/THEME.CFG"
-    fi
+    echo "Prepared THEME.CFG -> $ROOT/ (first-time migrate)"
 fi
 
 # 用户程序 / 共享库
