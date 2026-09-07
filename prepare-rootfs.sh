@@ -50,6 +50,25 @@ if [ -f "$ROOT/THEME.CFG" ]; then
 elif [ -f THEME.CFG ]; then
     cp -f THEME.CFG "$ROOT/THEME.CFG"
     echo "Prepared THEME.CFG -> $ROOT/ (first-time migrate)"
+else
+    # vvfat 曾弄丢宿主文件时兜底（与默认 1280×720 对齐）
+    cat > "$ROOT/THEME.CFG" <<'EOF'
+desktop=404040
+shell=c0c0c0
+font=0
+mode=1280x720
+EOF
+    cp -f "$ROOT/THEME.CFG" THEME.CFG
+    echo "Prepared THEME.CFG -> $ROOT/ (reseed default 1280x720)"
+fi
+# vvfat 以当前用户写回；只读/root 属主会导致 Guest「saved」但宿主 mode 不变
+for F in "$ROOT/THEME.CFG" "$ROOT/TOYOS.DB" THEME.CFG; do
+    if [ -e "$F" ]; then
+        chmod u+rw "$F" 2>/dev/null || true
+    fi
+done
+if [ -f "$ROOT/THEME.CFG" ] && [ ! -w "$ROOT/THEME.CFG" ]; then
+    echo "warning: $ROOT/THEME.CFG not writable by $(id -un) — Settings resolution will not persist" >&2
 fi
 
 # 用户程序 / 共享库
