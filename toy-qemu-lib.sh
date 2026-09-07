@@ -150,8 +150,8 @@ toy_qemu_read_theme_mode() {
         return 0
     fi
     if [ ! -f "$Cfg" ]; then
-        TOY_QEMU_XRES=1600
-        TOY_QEMU_YRES=900
+        TOY_QEMU_XRES=1280
+        TOY_QEMU_YRES=720
         echo "qemu: VGA edid ${TOY_QEMU_XRES}x${TOY_QEMU_YRES} (default; no $Cfg)"
         return 0
     fi
@@ -159,8 +159,8 @@ toy_qemu_read_theme_mode() {
     W="$(printf '%s' "$Line" | sed -n 's/.*mode=\([0-9][0-9]*\)[xX]\([0-9][0-9]*\).*/\1/p')"
     H="$(printf '%s' "$Line" | sed -n 's/.*mode=\([0-9][0-9]*\)[xX]\([0-9][0-9]*\).*/\2/p')"
     if [ -z "$W" ] || [ -z "$H" ]; then
-        TOY_QEMU_XRES=1600
-        TOY_QEMU_YRES=900
+        TOY_QEMU_XRES=1280
+        TOY_QEMU_YRES=720
         echo "qemu: VGA edid ${TOY_QEMU_XRES}x${TOY_QEMU_YRES} (default; no mode= in $Cfg)"
         return 0
     fi
@@ -196,6 +196,13 @@ toy_qemu_restore_boot_payloads() {
     local F
 
     [ -d "$Stash" ] || return 0
+
+    # THEME：Guest 可能已写入 rootfs；丢弃 stash 旧副本，避免下次 prepare 被旧文件误导
+    rm -f "$Stash/THEME.CFG" "$Stash/theme.cfg"
+    if [ -f rootfs/THEME.CFG ]; then
+        cp -f rootfs/THEME.CFG ./THEME.CFG
+    fi
+
     for F in "$Stash"/*; do
         [ -e "$F" ] || continue
         mv -f "$F" "./$(basename "$F")"

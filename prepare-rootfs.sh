@@ -11,30 +11,64 @@ if [ ! -f Kernel.elf ] && [ ! -f "$ROOT/Kernel.elf" ]; then
     exit 1
 fi
 
-# 内核：cwd 有则覆盖 rootfs（构建产物落点）
+# 内核：取 Build / cwd 里较新的一份写入 rootfs（避免 QEMU stash 还原的旧 Kernel 盖掉新构建）
+BUILD_KERNEL=../ToyKernel/Build/HAL/X64/Kernel.elf
+KERNEL_SRC=
+if [ -f "$BUILD_KERNEL" ]; then
+    KERNEL_SRC="$BUILD_KERNEL"
+fi
 if [ -f Kernel.elf ]; then
-    cp -f Kernel.elf "$ROOT/Kernel.elf"
+    if [ -z "$KERNEL_SRC" ] || [ Kernel.elf -nt "$KERNEL_SRC" ]; then
+        KERNEL_SRC=Kernel.elf
+    fi
+fi
+if [ -n "$KERNEL_SRC" ]; then
+    if [ ! -f "$ROOT/Kernel.elf" ] || [ "$KERNEL_SRC" -nt "$ROOT/Kernel.elf" ] ||
+       ! cmp -s "$KERNEL_SRC" "$ROOT/Kernel.elf" 2>/dev/null; then
+        cp -f "$KERNEL_SRC" "$ROOT/Kernel.elf"
+        echo "Prepared kernel from $KERNEL_SRC"
+    fi
 fi
 
-# 主题：优先 rootfs；若仅 cwd 有则迁入；两边都有时取较新
+# 主题：rootfs/THEME.CFG 是唯一权威（Guest Settings / QEMU edid 都认它）。
+# 勿用 cwd 上较新的旧副本盖掉系统盘（stash 还原曾导致 1280x720→1600x900）。
 if [ -f theme.cfg ]; then
-    if [ ! -f THEME.CFG ] || [ theme.cfg -nt THEME.CFG ]; then
+    if [ ! -f THEME.CFG ]; then
         cp -f theme.cfg THEME.CFG
     fi
     rm -f theme.cfg
 fi
 if [ -f "$ROOT/theme.cfg" ]; then
-    if [ ! -f "$ROOT/THEME.CFG" ] || [ "$ROOT/theme.cfg" -nt "$ROOT/THEME.CFG" ]; then
+    if [ ! -f "$ROOT/THEME.CFG" ]; then
         cp -f "$ROOT/theme.cfg" "$ROOT/THEME.CFG"
     fi
     rm -f "$ROOT/theme.cfg"
 fi
-if [ -f THEME.CFG ] && [ ! -f "$ROOT/THEME.CFG" ]; then
+if [ -f "$ROOT/THEME.CFG" ]; then
+    # 镜像到 cwd 仅供查看；绝不反向覆盖 rootfs
+    cp -f "$ROOT/THEME.CFG" THEME.CFG
+elif [ -f THEME.CFG ]; then
     cp -f THEME.CFG "$ROOT/THEME.CFG"
-elif [ -f THEME.CFG ] && [ -f "$ROOT/THEME.CFG" ]; then
-    if [ THEME.CFG -nt "$ROOT/THEME.CFG" ]; then
-        cp -f THEME.CFG "$ROOT/THEME.CFG"
+    echo "Prepared THEME.CFG -> $ROOT/ (first-time migrate)"
+else
+    # vvfat 曾弄丢宿主文件时兜底（与默认 1280×720 对齐）
+    cat > "$ROOT/THEME.CFG" <<'EOF'
+desktop=404040
+shell=c0c0c0
+font=0
+mode=1280x720
+EOF
+    cp -f "$ROOT/THEME.CFG" THEME.CFG
+    echo "Prepared THEME.CFG -> $ROOT/ (reseed default 1280x720)"
+fi
+# vvfat 以当前用户写回；只读/root 属主会导致 Guest「saved」但宿主 mode 不变
+for F in "$ROOT/THEME.CFG" "$ROOT/TOYOS.DB" THEME.CFG; do
+    if [ -e "$F" ]; then
+        chmod u+rw "$F" 2>/dev/null || true
     fi
+done
+if [ -f "$ROOT/THEME.CFG" ] && [ ! -w "$ROOT/THEME.CFG" ]; then
+    echo "warning: $ROOT/THEME.CFG not writable by $(id -un) — Settings resolution will not persist" >&2
 fi
 
 # 用户程序 / 共享库
@@ -79,6 +113,11 @@ fi
 if [ ! -f "$ROOT/Assets/Store/catalog.txt" ] && [ -d ../ToyKernel/Assets/Store ]; then
     mkdir -p "$ROOT/Assets/Store"
     cp -a ../ToyKernel/Assets/Store/. "$ROOT/Assets/Store/"
+fi
+# PR-S3：资源包安装目录占位
+mkdir -p "$ROOT/Assets/Packs"
+if [ -d ../ToyKernel/Assets/Packs ]; then
+    cp -a ../ToyKernel/Assets/Packs/. "$ROOT/Assets/Packs/" 2>/dev/null || true
 fi
 # PR-S0：已安装 / 缓存目录占位
 mkdir -p "$ROOT/Apps" "$ROOT/Store"
