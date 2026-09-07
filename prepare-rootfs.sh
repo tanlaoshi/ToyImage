@@ -80,6 +80,11 @@ if [ ! -f "$ROOT/Assets/Store/catalog.txt" ] && [ -d ../ToyKernel/Assets/Store ]
     mkdir -p "$ROOT/Assets/Store"
     cp -a ../ToyKernel/Assets/Store/. "$ROOT/Assets/Store/"
 fi
+# PR-S3：资源包安装目录占位
+mkdir -p "$ROOT/Assets/Packs"
+if [ -d ../ToyKernel/Assets/Packs ]; then
+    cp -a ../ToyKernel/Assets/Packs/. "$ROOT/Assets/Packs/" 2>/dev/null || true
+fi
 # PR-S0：已安装 / 缓存目录占位
 mkdir -p "$ROOT/Apps" "$ROOT/Store"
 if [ -d ../ToyKernel/Apps ]; then
