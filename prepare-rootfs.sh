@@ -11,9 +11,23 @@ if [ ! -f Kernel.elf ] && [ ! -f "$ROOT/Kernel.elf" ]; then
     exit 1
 fi
 
-# 内核：cwd 有则覆盖 rootfs（构建产物落点）
+# 内核：取 Build / cwd 里较新的一份写入 rootfs（避免 QEMU stash 还原的旧 Kernel 盖掉新构建）
+BUILD_KERNEL=../ToyKernel/Build/HAL/X64/Kernel.elf
+KERNEL_SRC=
+if [ -f "$BUILD_KERNEL" ]; then
+    KERNEL_SRC="$BUILD_KERNEL"
+fi
 if [ -f Kernel.elf ]; then
-    cp -f Kernel.elf "$ROOT/Kernel.elf"
+    if [ -z "$KERNEL_SRC" ] || [ Kernel.elf -nt "$KERNEL_SRC" ]; then
+        KERNEL_SRC=Kernel.elf
+    fi
+fi
+if [ -n "$KERNEL_SRC" ]; then
+    if [ ! -f "$ROOT/Kernel.elf" ] || [ "$KERNEL_SRC" -nt "$ROOT/Kernel.elf" ] ||
+       ! cmp -s "$KERNEL_SRC" "$ROOT/Kernel.elf" 2>/dev/null; then
+        cp -f "$KERNEL_SRC" "$ROOT/Kernel.elf"
+        echo "Prepared kernel from $KERNEL_SRC"
+    fi
 fi
 
 # 主题：优先 rootfs；若仅 cwd 有则迁入；两边都有时取较新
