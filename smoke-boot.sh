@@ -66,9 +66,9 @@ while [ "$i" -lt "$TIMEOUT_SEC" ]; do
         else
             echo "smoke: WARN — no boot: *keyboard line (headless may still PASS)" >&2
         fi
-        # PR-H-xhci-dual：课堂默认有 MSI；真机双轨保活
+        # QEMU 可见 MSI（课堂 dual 形）；真机 base=poll，dual 另刀
         if tr -d '\r' <"$LOG" | grep -E 'boot: xhci irq=msi' >/dev/null 2>&1; then
-            echo "smoke: PASS — xhci irq=msi (PR-H-xhci-dual)"
+            echo "smoke: PASS — xhci irq=msi (QEMU; real-PC H-xhci-base then dual)"
         elif tr -d '\r' <"$LOG" | grep -E 'boot: xhci irq=(ioapic|poll)' >/dev/null 2>&1; then
             echo "smoke: WARN — xhci irq fallback (not msi)" >&2
             tr -d '\r' <"$LOG" | grep -E 'boot: xhci irq=' | tail -1 || true
