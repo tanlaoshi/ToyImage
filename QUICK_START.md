@@ -54,3 +54,7 @@ TOY_SMP=2 ./smoke-boot.sh       # 可选双核冒烟
 
 → [`../ToyKernel/HAL/X64/NOTES-UEFI-PC.md`](../ToyKernel/HAL/X64/NOTES-UEFI-PC.md)  
 → [`../ToyBoot/README.md`](../ToyBoot/README.md)（Real PC 节）
+
+**真机冒烟勾选表**（上电→Boot→桌面；键/盘/网；无机器可先填「预期」）：
+
+→ [`../ToyKernel/Documents/真机冒烟清单.md`](../ToyKernel/Documents/真机冒烟清单.md)（**PR-PC-smoke**）
