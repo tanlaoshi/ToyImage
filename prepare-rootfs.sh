@@ -51,15 +51,15 @@ elif [ -f THEME.CFG ]; then
     cp -f THEME.CFG "$ROOT/THEME.CFG"
     echo "Prepared THEME.CFG -> $ROOT/ (first-time migrate)"
 else
-    # vvfat 曾弄丢宿主文件时兜底（与默认 1280×720 对齐）
+    # vvfat 曾弄丢宿主文件时兜底（与默认 1920×1080 对齐）
     cat > "$ROOT/THEME.CFG" <<'EOF'
 desktop=404040
 shell=c0c0c0
 font=0
-mode=1280x720
+mode=1920x1080
 EOF
     cp -f "$ROOT/THEME.CFG" THEME.CFG
-    echo "Prepared THEME.CFG -> $ROOT/ (reseed default 1280x720)"
+    echo "Prepared THEME.CFG -> $ROOT/ (reseed default 1920x1080)"
 fi
 # vvfat 以当前用户写回；只读/root 属主会导致 Guest「saved」但宿主 mode 不变
 for F in "$ROOT/THEME.CFG" "$ROOT/TOYOS.DB" THEME.CFG; do

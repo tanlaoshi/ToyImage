@@ -150,8 +150,8 @@ toy_qemu_read_theme_mode() {
         return 0
     fi
     if [ ! -f "$Cfg" ]; then
-        TOY_QEMU_XRES=1280
-        TOY_QEMU_YRES=720
+        TOY_QEMU_XRES=1920
+        TOY_QEMU_YRES=1080
         echo "qemu: VGA edid ${TOY_QEMU_XRES}x${TOY_QEMU_YRES} (default; no $Cfg)"
         return 0
     fi
@@ -159,8 +159,8 @@ toy_qemu_read_theme_mode() {
     W="$(printf '%s' "$Line" | sed -n 's/.*mode=\([0-9][0-9]*\)[xX]\([0-9][0-9]*\).*/\1/p')"
     H="$(printf '%s' "$Line" | sed -n 's/.*mode=\([0-9][0-9]*\)[xX]\([0-9][0-9]*\).*/\2/p')"
     if [ -z "$W" ] || [ -z "$H" ]; then
-        TOY_QEMU_XRES=1280
-        TOY_QEMU_YRES=720
+        TOY_QEMU_XRES=1920
+        TOY_QEMU_YRES=1080
         echo "qemu: VGA edid ${TOY_QEMU_XRES}x${TOY_QEMU_YRES} (default; no mode= in $Cfg)"
         return 0
     fi

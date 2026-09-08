@@ -11,13 +11,12 @@ TIMEOUT_SEC="${SMOKE_TIMEOUT:-90}"
 LOG="${SMOKE_LOG:-/tmp/toyos-smoke-$$.log}"
 
 cleanup() {
+    pkill -9 -f 'qemu-system-x86_64.*ToyOS' 2>/dev/null || \
+        pkill -9 -f 'qemu-system-x86_64' 2>/dev/null || true
     if [ -n "${QEMU_PID:-}" ] && kill -0 "$QEMU_PID" 2>/dev/null; then
         kill -9 "$QEMU_PID" 2>/dev/null || true
         wait "$QEMU_PID" 2>/dev/null || true
     fi
-    # 只杀本日志对应实例较难；冒烟结束清掉本机 ToyOS QEMU
-    pkill -9 -f 'qemu-system-x86_64.*ToyOS' 2>/dev/null || \
-        pkill -9 -f 'qemu-system-x86_64' 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -26,7 +25,7 @@ if [ ! -f rootfs/Kernel.elf ] && [ ! -f Kernel.elf ]; then
     exit 1
 fi
 
-echo "smoke: TOY_SMP=${TOY_SMP} TOY_DISK=${TOY_DISK:-ide} TOY_NET=${TOY_NET:-virtio} timeout=${TIMEOUT_SEC}s log=${LOG}"
+echo "smoke: TOY_SMP=${TOY_SMP} TOY_DISK=${TOY_DISK:-ide} TOY_NET=${TOY_NET:-virtio} TOY_USB_HUB=${TOY_USB_HUB:-0} timeout=${TIMEOUT_SEC}s log=${LOG}"
 rm -f "$LOG"
 : >"$LOG"
 ./run-split.sh --kill-qemu --headless --smp="${TOY_SMP}" >"$LOG" 2>&1 &
@@ -66,6 +65,24 @@ while [ "$i" -lt "$TIMEOUT_SEC" ]; do
             tr -d '\r' <"$LOG" | grep -E 'boot: xhci-hid keyboard|boot: ps2-kbd keyboard' | tail -1 || true
         else
             echo "smoke: WARN — no boot: *keyboard line (headless may still PASS)" >&2
+        fi
+        # PR-H-xhci-dual：课堂默认有 MSI；真机双轨保活
+        if tr -d '\r' <"$LOG" | grep -E 'boot: xhci irq=msi' >/dev/null 2>&1; then
+            echo "smoke: PASS — xhci irq=msi (PR-H-xhci-dual)"
+        elif tr -d '\r' <"$LOG" | grep -E 'boot: xhci irq=(ioapic|poll)' >/dev/null 2>&1; then
+            echo "smoke: WARN — xhci irq fallback (not msi)" >&2
+            tr -d '\r' <"$LOG" | grep -E 'boot: xhci irq=' | tail -1 || true
+        else
+            echo "smoke: WARN — no boot: xhci irq= line" >&2
+        fi
+        if [ "${TOY_USB_HUB:-0}" = 1 ]; then
+            if tr -d '\r' <"$LOG" | grep -F 'boot: xhci-hid via hub' >/dev/null 2>&1; then
+                echo "smoke: PASS — hub keyboard (PR-H-hub)"
+            else
+                echo "smoke: FAIL — TOY_USB_HUB=1 but no boot: xhci-hid via hub" >&2
+                tr -d '\r' <"$LOG" | grep -E 'xhci|hub' | tail -30 >&2 || true
+                exit 1
+            fi
         fi
         # PR-H3：默认应有 COM1（QEMU）；无则走 GOP（NO_COM1=1）
         if tr -d '\r' <"$LOG" | grep -F 'boot: COM1 serial ok' >/dev/null 2>&1; then
