@@ -50,11 +50,23 @@ TOY_SMP=2 ./smoke-boot.sh       # 可选双核冒烟
 
 ## 真机 U 盘（PR-H0）
 
-课堂双盘可压成 U 盘 ESP + TOYOS FAT。目标机约定、GOP 亮屏验收与已知缺口：
+课堂双盘可压成 U 盘 **ESP 256MiB + TOYOS 剩余**（GPT）。目标机约定与缺口：
 
 → [`../ToyKernel/HAL/X64/NOTES-UEFI-PC.md`](../ToyKernel/HAL/X64/NOTES-UEFI-PC.md)  
-→ [`../ToyBoot/README.md`](../ToyBoot/README.md)（Real PC 节）
-
-**真机冒烟勾选表**（上电→Boot→桌面；键/盘/网；无机器可先填「预期」）：
-
+→ [`../ToyBoot/README.md`](../ToyBoot/README.md)（Real PC 节）  
 → [`../ToyKernel/Documents/真机冒烟清单.md`](../ToyKernel/Documents/真机冒烟清单.md)（**PR-PC-smoke**）
+
+### 制作 / 同步脚本
+
+```bash
+# 一次性：擦盘分区（仅 USB；需 --yes）
+cd ToyImage
+./make-usb-stick.sh --device /dev/sdX --yes --sync
+
+# 日常：当前进展刷到已挂载的 ESP + TOYOS
+./sync-usb.sh              # 同步 Boot + rootfs
+./sync-usb.sh --build      # 先 ./build.sh Kernel+Boot 再同步
+./sync-usb.sh --kernel-only  # 只刷 Kernel.elf（旧 sync-kernel-usb.sh 同效）
+```
+
+桌面自动挂载后应看到卷标 **ESP** 与 **TOYOS**。Secure Boot 请关。
