@@ -11,7 +11,7 @@
 #   TOY_DISK=ahci ./run-split.sh        # PR-H1：AHCI 第二 Block（非 IDE）
 #   TOY_DISK=nvme ./run-split.sh        # PR-H5：NVMe Block
 #   TOY_NET=e1000 ./run-split.sh        # PR-H4：e1000 代替 virtio-net
-#   ./smoke-boot.sh                     # 自动 headless+kill，等 ToyOS ready
+#   TOY_USB_HUB=1 ./run-split.sh        # PR-H-hub：键盘挂在一层 usb-hub 后
 set -e
 cd "$(dirname "$0")"
 
@@ -36,6 +36,16 @@ DISPLAY_ARGS=(-display gtk,zoom-to-fit=off)
 if [ "${TOY_HEADLESS:-0}" = 1 ]; then
     DISPLAY_ARGS=(-display none)
     echo "qemu: headless (-display none)"
+fi
+
+# PR-H-hub：TOY_USB_HUB=1 时键盘在一层 hub 后；默认仍直挂根口
+USB_ARGS=()
+if [ "${TOY_USB_HUB:-0}" = 1 ]; then
+    # QEMU 6.x：hub 后设备用 port 路径（bus=hub0.0 在本机无效）
+    USB_ARGS=(-device usb-hub,bus=xhci.0,port=1 -device usb-kbd,bus=xhci.0,port=1.1 -device usb-tablet,bus=xhci.0,port=2)
+    echo "qemu: TOY_USB_HUB=1 (kbd behind hub port 1.1)"
+else
+    USB_ARGS=(-device usb-kbd,bus=xhci.0 -device usb-tablet,bus=xhci.0)
 fi
 
 NETDEV_ARGS=(user,id=n0)
@@ -100,8 +110,7 @@ qemu-system-x86_64 \
     -device VGA,edid=on,xres="${TOY_QEMU_XRES}",yres="${TOY_QEMU_YRES}" \
     "${DISPLAY_ARGS[@]}" \
     -device qemu-xhci,id=xhci \
-    -device usb-kbd,bus=xhci.0 \
-    -device usb-tablet,bus=xhci.0 \
+    "${USB_ARGS[@]}" \
     -netdev "${NETDEV_ARGS[@]}" \
     "${NET_ARGS[@]}" \
     -serial stdio \

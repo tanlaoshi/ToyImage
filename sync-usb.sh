@@ -33,10 +33,15 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+find_label_dev() {
+  local Label="$1"
+  blkid -L "$Label" 2>/dev/null || true
+}
+
 find_label_mnt() {
   local Label="$1"
   local Dev Mnt
-  Dev="$(blkid -L "$Label" 2>/dev/null || true)"
+  Dev="$(find_label_dev "$Label")"
   if [[ -z "$Dev" ]]; then
     return 1
   fi
@@ -45,6 +50,39 @@ find_label_mnt() {
     return 1
   fi
   printf '%s\n' "$Mnt"
+}
+
+# 桌面常只挂 TOYOS、不挂 ESP；UEFI 却从 ESP 启动 → 只改 TOYOS/EFI 等于白改。
+# 若 LABEL 存在但未挂载，挂到 /mnt/toyos-{esp,data}。
+ensure_label_mounted() {
+  local Label="$1"
+  local DefaultMnt="$2"
+  local Dev Mnt MUID MGID
+  Dev="$(find_label_dev "$Label")"
+  if [[ -z "$Dev" ]]; then
+    return 1
+  fi
+  Mnt="$(lsblk -ln -o MOUNTPOINT "$Dev" 2>/dev/null | awk 'NF{print; exit}')"
+  if [[ -n "$Mnt" && "$Mnt" != "-" ]]; then
+    printf '%s\n' "$Mnt"
+    return 0
+  fi
+  MUID="$(id -u)"
+  MGID="$(id -g)"
+  mkdir -p "$DefaultMnt"
+  if mount -o "uid=${MUID},gid=${MGID},umask=022" "$Dev" "$DefaultMnt" 2>/dev/null; then
+    echo "mounted LABEL=$Label $Dev -> $DefaultMnt" >&2
+    printf '%s\n' "$DefaultMnt"
+    return 0
+  fi
+  if command -v sudo >/dev/null 2>&1 && \
+     sudo mount -o "uid=${MUID},gid=${MGID},umask=022" "$Dev" "$DefaultMnt" 2>/dev/null; then
+    echo "mounted LABEL=$Label $Dev -> $DefaultMnt (sudo)" >&2
+    printf '%s\n' "$DefaultMnt"
+    return 0
+  fi
+  echo "error: found LABEL=$Label at $Dev but cannot mount (need root for ESP)." >&2
+  return 1
 }
 
 ESP_MNT="${TOY_ESP_MNT:-}"
@@ -73,6 +111,17 @@ if [[ -z "$ESP_MNT" ]]; then
   done
 fi
 
+# 未挂载则尝试挂上（尤其 ESP：否则 UEFI 仍跑旧 BOOTX64）
+if [[ -z "$ESP_MNT" ]]; then
+  ESP_MNT="$(ensure_label_mounted ESP /mnt/toyos-esp || true)"
+fi
+if [[ -z "$ESP_MNT" ]]; then
+  ESP_MNT="$(ensure_label_mounted EFI /mnt/toyos-esp || true)"
+fi
+if [[ -z "$TOY_MNT" ]]; then
+  TOY_MNT="$(ensure_label_mounted TOYOS /mnt/toyos-data || true)"
+fi
+
 if [[ -z "$TOY_MNT" ]]; then
   echo "error: TOYOS volume not mounted (label TOYOS)." >&2
   echo "  Format: $ROOT/make-usb-stick.sh --yes --sync" >&2
@@ -86,10 +135,20 @@ if [[ ! -d "$TOY_MNT" || ! -w "$TOY_MNT" ]]; then
 fi
 
 SINGLE_FAT=0
+ESP_DEV="$(find_label_dev ESP)"
+if [[ -z "$ESP_DEV" ]]; then
+  ESP_DEV="$(find_label_dev EFI)"
+fi
 if [[ -z "$ESP_MNT" ]]; then
+  if [[ -n "$ESP_DEV" ]]; then
+    echo "error: USB has ESP/EFI partition ($ESP_DEV) but it is not mounted." >&2
+    echo "  UEFI boots from ESP — writing Boot only into TOYOS will NOT take effect." >&2
+    echo "  Fix: sudo mount $ESP_DEV /mnt/toyos-esp && TOY_ESP_MNT=/mnt/toyos-esp $0" >&2
+    exit 1
+  fi
   SINGLE_FAT=1
   ESP_MNT="$TOY_MNT"
-  echo "note: no ESP mount — writing EFI into TOYOS (single-FAT layout)"
+  echo "note: no ESP partition — writing EFI into TOYOS (single-FAT layout)"
 elif [[ ! -w "$ESP_MNT" ]]; then
   echo "error: ESP mount not writable: $ESP_MNT" >&2
   exit 1
@@ -158,10 +217,16 @@ else
   cp -a "$ROOT/rootfs/." "$TOY_MNT/"
 fi
 
-# 单 FAT 时 EFI 已在上面写入同一卷
 if [[ "$SINGLE_FAT" -eq 1 ]]; then
+  # 仅单分区盘：启动与系统同卷，EFI 只能放 TOYOS
   mkdir -p "$TOY_MNT/EFI/BOOT"
   cp -f "$BOOT_EFI" "$TOY_MNT/EFI/BOOT/BOOTX64.EFI"
+else
+  # 双分区：EFI 只在 ESP；清掉 TOYOS 上误放的 EFI（旧兜底遗留，UEFI 不读它）
+  if [[ -d "$TOY_MNT/EFI" ]]; then
+    echo "note: removing stale $TOY_MNT/EFI (Boot lives on ESP only)"
+    rm -rf "$TOY_MNT/EFI"
+  fi
 fi
 
 # 确保识别文件存在
