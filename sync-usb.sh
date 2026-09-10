@@ -129,6 +129,54 @@ if [[ -z "$TOY_MNT" ]]; then
   exit 1
 fi
 
+# --kernel-only：只碰 TOYOS，不要求 ESP（避免误判 single-FAT / 往 ESP 写 Kernel）
+if [[ "$KERNEL_ONLY" -eq 1 ]]; then
+  if [[ "$DO_BUILD" -eq 1 ]]; then
+    echo "== build Kernel =="
+    (cd "$ROOT/../ToyKernel" && ./build.sh)
+  fi
+  if [[ ! -d "$TOY_MNT" ]]; then
+    echo "error: TOYOS mount missing: $TOY_MNT" >&2
+    exit 1
+  fi
+  if [[ ! -w "$TOY_MNT" ]]; then
+    echo "error: TOYOS not writable: $TOY_MNT (try: sudo chown \$USER \"$TOY_MNT\" or sudo $0 --kernel-only)" >&2
+    exit 1
+  fi
+  SRC=""
+  for C in \
+    "$ROOT/../ToyKernel/Build/HAL/X64/Kernel.elf" \
+    "$ROOT/rootfs/Kernel.elf" \
+    "$ROOT/Kernel.elf"
+  do
+    if [[ -f "$C" ]]; then SRC="$C"; break; fi
+  done
+  if [[ -z "$SRC" ]]; then
+    echo "error: no Kernel.elf — build first or drop --kernel-only" >&2
+    exit 1
+  fi
+  if [[ -d "$TOY_MNT/EFI/BOOT" && ! -f "$TOY_MNT/TOYOS.ID" ]]; then
+    echo "error: $TOY_MNT looks like ESP (EFI/BOOT present, no TOYOS.ID)." >&2
+    echo "  Use the data partition (LABEL=TOYOS), e.g. /media/\$USER/TOYOS" >&2
+    exit 1
+  fi
+  cp -f "$SRC" "$TOY_MNT/Kernel.elf"
+  if [[ ! -f "$TOY_MNT/TOYOS.ID" ]]; then
+    printf "ToyOS root volume\n" > "$TOY_MNT/TOYOS.ID"
+    echo "note: wrote $TOY_MNT/TOYOS.ID (UEFI Boot 靠它认系统盘)"
+  fi
+  sync
+  echo "=== kernel-only sync (TOYOS only; ESP untouched) ==="
+  echo "TOYOS -> $TOY_MNT"
+  echo "src   -> $SRC"
+  ls -l --time-style=long-iso "$SRC" "$TOY_MNT/Kernel.elf" "$TOY_MNT/TOYOS.ID"
+  md5sum "$SRC" "$TOY_MNT/Kernel.elf"
+  echo
+  echo "Boot loads Kernel from TOYOS via TOYOS.ID. Do not put Kernel.elf on ESP."
+  echo "PHOTO 'fs: default=ESP (no TOYOS.ID)' is often the PC's NVMe ESP — kernel may not see USB yet."
+  exit 0
+fi
+
 if [[ ! -d "$TOY_MNT" || ! -w "$TOY_MNT" ]]; then
   echo "error: TOYOS mount not writable: $TOY_MNT" >&2
   exit 1
@@ -139,11 +187,22 @@ ESP_DEV="$(find_label_dev ESP)"
 if [[ -z "$ESP_DEV" ]]; then
   ESP_DEV="$(find_label_dev EFI)"
 fi
+# 桌面常把 ESP 挂在 /mnt/toyos-esp，但 blkid 无 LABEL=ESP
+if [[ -z "$ESP_MNT" && -d /mnt/toyos-esp/EFI/BOOT ]]; then
+  ESP_MNT=/mnt/toyos-esp
+  echo "note: using /mnt/toyos-esp as ESP (no LABEL=ESP in blkid)"
+fi
 if [[ -z "$ESP_MNT" ]]; then
   if [[ -n "$ESP_DEV" ]]; then
     echo "error: USB has ESP/EFI partition ($ESP_DEV) but it is not mounted." >&2
     echo "  UEFI boots from ESP — writing Boot only into TOYOS will NOT take effect." >&2
     echo "  Fix: sudo mount $ESP_DEV /mnt/toyos-esp && TOY_ESP_MNT=/mnt/toyos-esp $0" >&2
+    exit 1
+  fi
+  # 同盘另一分区已挂成 TOYOS 时，勿把 TOYOS 当成 single-FAT ESP
+  if lsblk -n -o NAME,MOUNTPOINT 2>/dev/null | grep -q toyos-esp; then
+    echo "error: looks like dual-partition USB but ESP mount not resolved." >&2
+    echo "  Mount ESP and re-run, or: TOY_ESP_MNT=/mnt/toyos-esp $0" >&2
     exit 1
   fi
   SINGLE_FAT=1
@@ -166,26 +225,6 @@ if [[ "$DO_BUILD" -eq 1 ]]; then
   else
     echo "warning: ToyBoot/build.sh missing; keep existing BOOTX64.EFI" >&2
   fi
-fi
-
-if [[ "$KERNEL_ONLY" -eq 1 ]]; then
-  SRC=""
-  for C in \
-    "$ROOT/../ToyKernel/Build/HAL/X64/Kernel.elf" \
-    "$ROOT/rootfs/Kernel.elf" \
-    "$ROOT/Kernel.elf"
-  do
-    if [[ -f "$C" ]]; then SRC="$C"; break; fi
-  done
-  if [[ -z "$SRC" ]]; then
-    echo "error: no Kernel.elf — build first or drop --kernel-only" >&2
-    exit 1
-  fi
-  cp -f "$SRC" "$TOY_MNT/Kernel.elf"
-  sync
-  echo "synced Kernel.elf ($(stat -c%s "$TOY_MNT/Kernel.elf") bytes)"
-  md5sum "$SRC" "$TOY_MNT/Kernel.elf"
-  exit 0
 fi
 
 echo "== prepare-rootfs =="
