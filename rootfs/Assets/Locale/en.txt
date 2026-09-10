@@ -20,6 +20,9 @@ MSG_SET_LANGUAGE= 5. Language
 MSG_SET_HINT_MAIN=1-5 open  Esc/0 back
 MSG_SET_HINT_BACK= 0. Back
 MSG_SET_SAVED=Saved. QEMU: quit+./run-split.sh
+MSG_SET_SAVED_PC=Saved. Real PC uses monitor EDID/GOP
+MSG_SET_PREF_DIFF=Pref!=Now: quit QEMU + ./run-split.sh
+MSG_SET_PREF_DIFF_PC=Pref recorded; real PC boot follows EDID
 MSG_SET_LANG_EN= 1. English
 MSG_SET_LANG_ZH= 2. Chinese
 MSG_SET_PAGE_DESKTOP=[Desktop bg]

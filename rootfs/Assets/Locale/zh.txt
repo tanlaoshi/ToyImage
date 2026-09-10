@@ -20,6 +20,9 @@ MSG_SET_LANGUAGE= 5. 语言
 MSG_SET_HINT_MAIN=1-5 打开  Esc/0 返回
 MSG_SET_HINT_BACK= 0. 返回
 MSG_SET_SAVED=已保存。QEMU: 退出后 ./run-split.sh
+MSG_SET_SAVED_PC=已保存。真机启动跟显示器 EDID/GOP
+MSG_SET_PREF_DIFF=Pref!=Now: 退出 QEMU 后 ./run-split.sh
+MSG_SET_PREF_DIFF_PC=已记录偏好；真机启动跟 EDID
 MSG_SET_LANG_EN= 1. English
 MSG_SET_LANG_ZH= 2. 中文
 MSG_SET_PAGE_DESKTOP=[桌面背景]
