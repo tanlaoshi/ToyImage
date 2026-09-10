@@ -99,6 +99,12 @@ case "${TOY_NET:-virtio}" in
         ;;
 esac
 
+# 冒烟/无头默认 -no-reboot（三重故障不循环）；交互桌面勿加，否则开始菜单「重启」只退出 QEMU
+NO_REBOOT_ARGS=()
+if [ "${TOY_HEADLESS:-0}" = 1 ] || [ "${TOY_NO_REBOOT:-0}" = 1 ]; then
+    NO_REBOOT_ARGS=(-no-reboot)
+fi
+
 # 不用 -vga std：显式 VGA+edid；zoom-to-fit=off 让窗口跟 guest 分辨率走。
 qemu-system-x86_64 \
     -name "ToyOS",process=qemu-system-x86_64 \
@@ -114,4 +120,4 @@ qemu-system-x86_64 \
     -netdev "${NETDEV_ARGS[@]}" \
     "${NET_ARGS[@]}" \
     -serial stdio \
-    -no-reboot
+    "${NO_REBOOT_ARGS[@]}"
