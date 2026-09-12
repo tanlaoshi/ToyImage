@@ -6,13 +6,9 @@
 MSG_APP_SHELL=ToyOS Shell
 MSG_APP_SETTINGS=Settings
 MSG_APP_FILES=Files
-MSG_APP_STORE=Store
 MSG_ICON_SHELL=Shell
 MSG_ICON_SETTINGS=Settings
 MSG_ICON_FILES=Files
-MSG_ICON_STORE=Store
-MSG_ICON_SHUTDOWN=Shutdown
-MSG_ICON_REBOOT=Reboot
 MSG_START=Start
 MSG_SET_TITLE=Settings
 MSG_SET_MAIN=[Main]
@@ -24,9 +20,6 @@ MSG_SET_LANGUAGE= 5. Language
 MSG_SET_HINT_MAIN=1-5 open  Esc/0 back
 MSG_SET_HINT_BACK= 0. Back
 MSG_SET_SAVED=Saved. QEMU: quit+./run-split.sh
-MSG_SET_SAVED_PC=Saved. Real PC uses monitor EDID/GOP
-MSG_SET_PREF_DIFF=Pref!=Now: quit QEMU + ./run-split.sh
-MSG_SET_PREF_DIFF_PC=Pref recorded; real PC boot follows EDID
 MSG_SET_LANG_EN= 1. English
 MSG_SET_LANG_ZH= 2. Chinese
 MSG_SET_PAGE_DESKTOP=[Desktop bg]
