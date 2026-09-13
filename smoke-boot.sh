@@ -25,7 +25,7 @@ if [ ! -f rootfs/Kernel.elf ] && [ ! -f Kernel.elf ]; then
     exit 1
 fi
 
-echo "smoke: TOY_SMP=${TOY_SMP} TOY_DISK=${TOY_DISK:-ide} TOY_NET=${TOY_NET:-virtio} TOY_USB_HUB=${TOY_USB_HUB:-0} timeout=${TIMEOUT_SEC}s log=${LOG}"
+echo "smoke: TOY_SMP=${TOY_SMP} TOY_DISK=${TOY_DISK:-ide} TOY_NET=${TOY_NET:-virtio} TOY_USB_HUB=${TOY_USB_HUB:-0} TOY_USB_MSC=${TOY_USB_MSC:-0} timeout=${TIMEOUT_SEC}s log=${LOG}"
 rm -f "$LOG"
 : >"$LOG"
 ./run-split.sh --kill-qemu --headless --smp="${TOY_SMP}" >"$LOG" 2>&1 &
@@ -81,6 +81,21 @@ while [ "$i" -lt "$TIMEOUT_SEC" ]; do
             else
                 echo "smoke: FAIL — TOY_USB_HUB=1 but no boot: xhci-hid via hub" >&2
                 tr -d '\r' <"$LOG" | grep -E 'xhci|hub' | tail -30 >&2 || true
+                exit 1
+            fi
+        fi
+        # PR-H-msc-8：TOY_USB_MSC=1 须见 auto mux（7b）；键鼠仍在
+        if [ "${TOY_USB_MSC:-0}" = 1 ]; then
+            if tr -d '\r' <"$LOG" | grep -F 'boot: msc auto mux ok' >/dev/null 2>&1; then
+                echo "smoke: PASS — msc auto mux (PR-H-msc-8)"
+                tr -d '\r' <"$LOG" | grep -F 'boot: msc auto mux ok' | tail -1 || true
+            else
+                echo "smoke: FAIL — TOY_USB_MSC=1 but no boot: msc auto mux ok" >&2
+                tr -d '\r' <"$LOG" | grep -E 'msc auto|msc claim|msc bot|block-mux' | tail -40 >&2 || true
+                exit 1
+            fi
+            if ! tr -d '\r' <"$LOG" | grep -E 'boot: xhci-hid keyboard|boot: ps2-kbd keyboard' >/dev/null 2>&1; then
+                echo "smoke: FAIL — msc smoke lost keyboard backend" >&2
                 exit 1
             fi
         fi

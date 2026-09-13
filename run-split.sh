@@ -12,6 +12,7 @@
 #   TOY_DISK=nvme ./run-split.sh        # PR-H5：NVMe Block
 #   TOY_NET=e1000 ./run-split.sh        # PR-H4：e1000 代替 virtio-net
 #   TOY_USB_HUB=1 ./run-split.sh        # PR-H-hub：键盘挂在一层 usb-hub 后
+#   TOY_USB_MSC=1 ./run-split.sh        # PR-H-msc-8：额外 usb-storage（msc-stick/）
 set -e
 cd "$(dirname "$0")"
 
@@ -46,6 +47,20 @@ if [ "${TOY_USB_HUB:-0}" = 1 ]; then
     echo "qemu: TOY_USB_HUB=1 (kbd behind hub port 1.1)"
 else
     USB_ARGS=(-device usb-kbd,bus=xhci.0 -device usb-tablet,bus=xhci.0)
+fi
+
+# PR-H-msc-8：TOY_USB_MSC=1 → 挂 msc-stick/ 为 usb-storage（验 7b auto mux）
+MSC_DISK_ARGS=()
+if [ "${TOY_USB_MSC:-0}" = 1 ]; then
+    if [ ! -d msc-stick ] || [ ! -f msc-stick/TOYOS.ID ]; then
+        echo "error: TOY_USB_MSC=1 needs msc-stick/TOYOS.ID" >&2
+        exit 1
+    fi
+    echo "qemu: TOY_USB_MSC=1 (usb-storage ← msc-stick/)"
+    MSC_DISK_ARGS=(
+        -drive if=none,id=toymsc,format=raw,file=fat:rw:msc-stick
+        -device usb-storage,drive=toymsc,bus=xhci.0
+    )
 fi
 
 NETDEV_ARGS=(user,id=n0)
@@ -117,6 +132,7 @@ qemu-system-x86_64 \
     "${DISPLAY_ARGS[@]}" \
     -device qemu-xhci,id=xhci \
     "${USB_ARGS[@]}" \
+    "${MSC_DISK_ARGS[@]}" \
     -netdev "${NETDEV_ARGS[@]}" \
     "${NET_ARGS[@]}" \
     -serial stdio \
