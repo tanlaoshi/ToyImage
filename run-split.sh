@@ -11,6 +11,7 @@
 #   TOY_DISK=ahci ./run-split.sh        # PR-H1：AHCI 第二 Block（非 IDE）
 #   TOY_DISK=nvme ./run-split.sh        # PR-H5：NVMe Block
 #   TOY_NET=e1000 ./run-split.sh        # PR-H4：e1000 代替 virtio-net
+#   TOY_NET=e1000e ./run-split.sh       # PR-H4e-1：e1000e（82574）
 #   TOY_USB_HUB=1 ./run-split.sh        # PR-H-hub：键盘挂在一层 usb-hub 后
 #   TOY_USB_MSC=1 ./run-split.sh        # PR-H-msc-8：额外 usb-storage（msc-stick/）
 set -e
@@ -102,9 +103,13 @@ case "${TOY_DISK:-ide}" in
         ;;
 esac
 
-# 网卡：默认 virtio-net-pci；TOY_NET=e1000 → Intel e1000（PR-H4）
+# 网卡：默认 virtio-net-pci；TOY_NET=e1000|e1000e → Intel（PR-H4 / H4e-1）
 NET_ARGS=()
 case "${TOY_NET:-virtio}" in
+    e1000e|E1000E)
+        echo "qemu: net=e1000e (PR-H4e-1)"
+        NET_ARGS=(-device e1000e,netdev=n0)
+        ;;
     e1000|E1000)
         echo "qemu: net=e1000 (PR-H4)"
         NET_ARGS=(-device e1000,netdev=n0)
