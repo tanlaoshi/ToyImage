@@ -103,18 +103,26 @@ while [ "$i" -lt "$TIMEOUT_SEC" ]; do
         if tr -d '\r' <"$LOG" | grep -F 'boot: COM1 serial ok' >/dev/null 2>&1; then
             echo "smoke: PASS — COM1 serial (PR-H3)"
         fi
-        # PR-H4 / H4e-1：TOY_NET=e1000|e1000e
+        # PR-H4 / H4e-1…3：TOY_NET=e1000|e1000e
         if [ "${TOY_NET:-virtio}" = "e1000e" ] || [ "${TOY_NET:-}" = "E1000E" ]; then
             if tr -d '\r' <"$LOG" | grep -E 'boot: e1000e($|[^a-zA-Z0-9_])' >/dev/null 2>&1 || \
                tr -d '\r' <"$LOG" | grep -F 'boot: e1000e' >/dev/null 2>&1; then
                 echo "smoke: PASS — e1000e backend (PR-H4e-1)"
+                if tr -d '\r' <"$LOG" | grep -F 'boot: e1000e irq=msi' >/dev/null 2>&1; then
+                    echo "smoke: PASS — e1000e irq=msi (PR-H4e-3)"
+                else
+                    echo "smoke: FAIL — TOY_NET=e1000e but no boot: e1000e irq=msi" >&2
+                    tr -d '\r' <"$LOG" | grep -E 'e1000|MSI|irq' | tail -20 >&2 || true
+                    exit 1
+                fi
             else
                 echo "smoke: FAIL — TOY_NET=e1000e but no boot: e1000e line" >&2
                 tr -d '\r' <"$LOG" | grep -E 'e1000|net:|virtio|link' | tail -20 >&2 || true
                 exit 1
             fi
         elif [ "${TOY_NET:-virtio}" = "e1000" ] || [ "${TOY_NET:-}" = "E1000" ]; then
-            if tr -d '\r' <"$LOG" | grep -E 'boot: e1000($|[^e])' >/dev/null 2>&1; then
+            if tr -d '\r' <"$LOG" | grep -E 'boot: e1000($|[^e])' >/dev/null 2>&1 || \
+               tr -d '\r' <"$LOG" | grep -F 'boot: e1000 irq=msi' >/dev/null 2>&1; then
                 echo "smoke: PASS — e1000 backend (PR-H4)"
             else
                 echo "smoke: FAIL — TOY_NET=e1000 but no boot: e1000 line" >&2
