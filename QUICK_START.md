@@ -48,6 +48,30 @@ TOY_SMP=2 ./smoke-boot.sh       # 可选双核冒烟
 
 成功条件：串口日志出现 `ToyOS ready`。
 
+## 网络课默认路径（PR-N-lwip）
+
+默认内核已编入 **lwIP**（`./build.sh`，`LWIP=0` 可关）。课堂顺序：
+
+```bash
+# 宿主机另开终端（客户端连 10.0.2.2:8888）
+nc -l -p 8888
+
+cd ../ToyKernel && ./build.sh
+cd ../ToyImage  && ./run-split.sh
+```
+
+Guest Shell：
+
+```text
+ping 10.0.2.2
+lwip on
+dns 10.0.2.2
+exec NETLIB.ELF
+# 或：exec NETDEMO.ELF   （裸 syscall 对照）
+```
+
+成功看到 `netlib: ok`。未 `lwip on` 时，`ping` / `tcplisten` 等走 **builtin 教学对照栈**。双栈规则与 socket 表见 [`../ToyKernel/ThirdParty/README.md`](../ToyKernel/ThirdParty/README.md)。
+
 ## 真机 U 盘（PR-H0）
 
 课堂双盘可压成 U 盘 **ESP 256MiB + TOYOS 剩余**（GPT）。目标机约定与缺口：
