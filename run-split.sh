@@ -103,6 +103,26 @@ case "${TOY_DISK:-ide}" in
         ;;
 esac
 
+# PR-FS-inst-1：空白第三盘（AHCI 口 2）；Guest：install 2 --yes --mib 512
+# 镜像勿放在 fat:rw:.（cwd）内，否则 ESP vvfat 撑爆
+if [ "${TOY_INSTALL_DISK:-0}" = 1 ]; then
+    if [ "${TOY_DISK:-ide}" != "ahci" ] && [ "${TOY_DISK:-ide}" != "AHCI" ]; then
+        echo "error: TOY_INSTALL_DISK=1 requires TOY_DISK=ahci (third AHCI port)" >&2
+        exit 1
+    fi
+    INSTALL_IMG="${TOY_INSTALL_IMG:-/tmp/toyos-install-target.img}"
+    INSTALL_MIB="${TOY_INSTALL_MIB:-512}"
+    if [ ! -f "$INSTALL_IMG" ]; then
+        echo "qemu: create $INSTALL_IMG (${INSTALL_MIB}MiB)"
+        qemu-img create -f raw "$INSTALL_IMG" "${INSTALL_MIB}M" >/dev/null
+    fi
+    echo "qemu: TOY_INSTALL_DISK=1 → $INSTALL_IMG on ahci.2 (Guest drive 2)"
+    DISK_ARGS+=(
+        -drive if=none,id=toyinst,format=raw,file="$INSTALL_IMG"
+        -device ide-hd,drive=toyinst,bus=ahci.2
+    )
+fi
+
 # 网卡：默认 virtio-net-pci；TOY_NET=e1000|e1000e → Intel（PR-H4 / H4e-1）
 NET_ARGS=()
 case "${TOY_NET:-virtio}" in
