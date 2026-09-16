@@ -78,7 +78,7 @@ exec NETLIB.ELF
 
 → [`../ToyKernel/HAL/X64/NOTES-UEFI-PC.md`](../ToyKernel/HAL/X64/NOTES-UEFI-PC.md)  
 → [`../ToyBoot/README.md`](../ToyBoot/README.md)（Real PC 节）  
-→ [`../ToyKernel/Documents/真机冒烟清单.md`](../ToyKernel/Documents/真机冒烟清单.md)（**PR-PC-smoke**）
+→ [`../ToyKernel/Documents/Done/真机冒烟清单.md`](../ToyKernel/Documents/Done/真机冒烟清单.md)（**PR-PC-smoke**）
 
 ### 制作 / 同步脚本
 
