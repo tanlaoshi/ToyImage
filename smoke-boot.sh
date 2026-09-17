@@ -99,9 +99,11 @@ while [ "$i" -lt "$TIMEOUT_SEC" ]; do
                 exit 1
             fi
         fi
-        # PR-H3：默认应有 COM1（QEMU）；无则走 GOP（NO_COM1=1）
-        if tr -d '\r' <"$LOG" | grep -F 'boot: COM1 serial ok' >/dev/null 2>&1; then
+        # PR-H3：默认应有 COM1（QEMU）；与 Boot 同构横幅 ToyKernel / [COM1]:初始化OK
+        if tr -d '\r' <"$LOG" | grep -F '[COM1]:初始化OK' >/dev/null 2>&1; then
             echo "smoke: PASS — COM1 serial (PR-H3)"
+        elif tr -d '\r' <"$LOG" | grep -F 'boot: COM1 serial ok' >/dev/null 2>&1; then
+            echo "smoke: PASS — COM1 serial (PR-H3, legacy)"
         fi
         # PR-H4 / H4e-1…3：TOY_NET=e1000|e1000e
         if [ "${TOY_NET:-virtio}" = "e1000e" ] || [ "${TOY_NET:-}" = "E1000E" ]; then

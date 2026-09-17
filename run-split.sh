@@ -37,7 +37,7 @@ trap 'toy_qemu_restore_boot_payloads' EXIT
 DISPLAY_ARGS=(-display gtk,zoom-to-fit=off)
 if [ "${TOY_HEADLESS:-0}" = 1 ]; then
     DISPLAY_ARGS=(-display none)
-    echo "qemu: headless (-display none)"
+    toy_qemu_info "qemu: headless (-display none)"
 fi
 
 # PR-H-hub：TOY_USB_HUB=1 时键盘在一层 hub 后；默认仍直挂根口
@@ -45,7 +45,7 @@ USB_ARGS=()
 if [ "${TOY_USB_HUB:-0}" = 1 ]; then
     # QEMU 6.x：hub 后设备用 port 路径（bus=hub0.0 在本机无效）
     USB_ARGS=(-device usb-hub,bus=xhci.0,port=1 -device usb-kbd,bus=xhci.0,port=1.1 -device usb-tablet,bus=xhci.0,port=2)
-    echo "qemu: TOY_USB_HUB=1 (kbd behind hub port 1.1)"
+    toy_qemu_info "qemu: TOY_USB_HUB=1 (kbd behind hub port 1.1)"
 else
     USB_ARGS=(-device usb-kbd,bus=xhci.0 -device usb-tablet,bus=xhci.0)
 fi
@@ -57,7 +57,7 @@ if [ "${TOY_USB_MSC:-0}" = 1 ]; then
         echo "error: TOY_USB_MSC=1 needs msc-stick/TOYOS.ID" >&2
         exit 1
     fi
-    echo "qemu: TOY_USB_MSC=1 (usb-storage ← msc-stick/)"
+    toy_qemu_info "qemu: TOY_USB_MSC=1 (usb-storage ← msc-stick/)"
     MSC_DISK_ARGS=(
         -drive if=none,id=toymsc,format=raw,file=fat:rw:msc-stick
         -device usb-storage,drive=toymsc,bus=xhci.0
@@ -74,7 +74,7 @@ fi
 DISK_ARGS=()
 case "${TOY_DISK:-ide}" in
     ahci|AHCI)
-        echo "qemu: disk=ahci (PR-H1)"
+        toy_qemu_info "qemu: disk=ahci (PR-H1)"
         DISK_ARGS=(
             -device ich9-ahci,id=ahci
             -drive if=none,id=toyesp,format=raw,file=fat:rw:.
@@ -84,7 +84,7 @@ case "${TOY_DISK:-ide}" in
         )
         ;;
     nvme|NVMe|NVME)
-        echo "qemu: disk=nvme (PR-H5)"
+        toy_qemu_info "qemu: disk=nvme (PR-H5)"
         DISK_ARGS=(
             -drive if=none,id=toyesp,format=raw,file=fat:rw:.
             -device nvme,serial=toyesp,drive=toyesp,logical_block_size=512,physical_block_size=512,bootindex=0
@@ -113,10 +113,10 @@ if [ "${TOY_INSTALL_DISK:-0}" = 1 ]; then
     INSTALL_IMG="${TOY_INSTALL_IMG:-/tmp/toyos-install-target.img}"
     INSTALL_MIB="${TOY_INSTALL_MIB:-512}"
     if [ ! -f "$INSTALL_IMG" ]; then
-        echo "qemu: create $INSTALL_IMG (${INSTALL_MIB}MiB)"
+        toy_qemu_info "qemu: create $INSTALL_IMG (${INSTALL_MIB}MiB)"
         qemu-img create -f raw "$INSTALL_IMG" "${INSTALL_MIB}M" >/dev/null
     fi
-    echo "qemu: TOY_INSTALL_DISK=1 → $INSTALL_IMG on ahci.2 (Guest drive 2)"
+    toy_qemu_info "qemu: TOY_INSTALL_DISK=1 → $INSTALL_IMG on ahci.2 (Guest drive 2)"
     DISK_ARGS+=(
         -drive if=none,id=toyinst,format=raw,file="$INSTALL_IMG"
         -device ide-hd,drive=toyinst,bus=ahci.2
@@ -127,11 +127,11 @@ fi
 NET_ARGS=()
 case "${TOY_NET:-virtio}" in
     e1000e|E1000E)
-        echo "qemu: net=e1000e (PR-H4e-1)"
+        toy_qemu_info "qemu: net=e1000e (PR-H4e-1)"
         NET_ARGS=(-device e1000e,netdev=n0)
         ;;
     e1000|E1000)
-        echo "qemu: net=e1000 (PR-H4)"
+        toy_qemu_info "qemu: net=e1000 (PR-H4)"
         NET_ARGS=(-device e1000,netdev=n0)
         ;;
     *)

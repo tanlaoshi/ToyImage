@@ -26,7 +26,7 @@ if [ -n "$KERNEL_SRC" ]; then
     if [ ! -f "$ROOT/Kernel.elf" ] || [ "$KERNEL_SRC" -nt "$ROOT/Kernel.elf" ] ||
        ! cmp -s "$KERNEL_SRC" "$ROOT/Kernel.elf" 2>/dev/null; then
         cp -f "$KERNEL_SRC" "$ROOT/Kernel.elf"
-        echo "Prepared kernel from $KERNEL_SRC"
+        if [ "${TOY_QEMU_VERBOSE:-0}" = 1 ]; then echo "Prepared kernel from $KERNEL_SRC"; fi
     fi
 fi
 
@@ -49,7 +49,7 @@ if [ -f "$ROOT/THEME.CFG" ]; then
     cp -f "$ROOT/THEME.CFG" THEME.CFG
 elif [ -f THEME.CFG ]; then
     cp -f THEME.CFG "$ROOT/THEME.CFG"
-    echo "Prepared THEME.CFG -> $ROOT/ (first-time migrate)"
+    if [ "${TOY_QEMU_VERBOSE:-0}" = 1 ]; then echo "Prepared THEME.CFG -> $ROOT/ (first-time migrate)"; fi
 else
     # vvfat 曾弄丢宿主文件时兜底（与默认 1920×1080 对齐）
     cat > "$ROOT/THEME.CFG" <<'EOF'
@@ -59,7 +59,7 @@ font=0
 mode=1920x1080
 EOF
     cp -f "$ROOT/THEME.CFG" THEME.CFG
-    echo "Prepared THEME.CFG -> $ROOT/ (reseed default 1920x1080)"
+    if [ "${TOY_QEMU_VERBOSE:-0}" = 1 ]; then echo "Prepared THEME.CFG -> $ROOT/ (reseed default 1920x1080)"; fi
 fi
 # vvfat 以当前用户写回；只读/root 属主会导致 Guest「saved」但宿主 mode 不变
 for F in "$ROOT/THEME.CFG" "$ROOT/TOYOS.DB" THEME.CFG; do
@@ -135,6 +135,11 @@ if [ -d Store ]; then
 fi
 
 printf "ToyOS root volume\n" > "$ROOT/TOYOS.ID"
-echo "Prepared $ROOT (TOYOS system disk):"
-ls -lh "$ROOT"
-find "$ROOT/Assets" -type f 2>/dev/null | sort || true
+# 默认一行摘要；TOY_QEMU_VERBOSE=1 才 ls/find 刷屏
+if [ "${TOY_QEMU_VERBOSE:-0}" = 1 ]; then
+    echo "Prepared $ROOT (TOYOS system disk):"
+    ls -lh "$ROOT"
+    find "$ROOT/Assets" -type f 2>/dev/null | sort || true
+else
+    echo "Prepared $ROOT (TOYOS system disk)"
+fi

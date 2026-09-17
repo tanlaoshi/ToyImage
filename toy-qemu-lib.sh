@@ -1,6 +1,13 @@
 # Shared helpers for run-split.sh (NVRAM + args + THEME + SMP)
 # shellcheck shell=bash
 
+# 宿主例行提示：默认安静；TOY_QEMU_VERBOSE=1 才刷
+toy_qemu_info() {
+    if [ "${TOY_QEMU_VERBOSE:-0}" = 1 ]; then
+        echo "$@"
+    fi
+}
+
 toy_qemu_setup_ovmf() {
     CODE="${OVMF_CODE:-/usr/share/OVMF/OVMF_CODE_4M.fd}"
     VARS_TEMPLATE="${OVMF_VARS_SRC:-/usr/share/OVMF/OVMF_VARS_4M.fd}"
@@ -108,7 +115,7 @@ toy_qemu_kill_others() {
     local N
     N="$(toy_qemu_count_others)"
     if [ "$N" -le 0 ]; then
-        echo "qemu: no leftover qemu-system-x86_64"
+        toy_qemu_info "qemu: no leftover qemu-system-x86_64"
         return 0
     fi
     echo "qemu: killing ${N} leftover qemu-system-x86_64 (SIPI safety)" >&2
@@ -135,7 +142,7 @@ toy_qemu_prepare_smp() {
 
     TOY_SMP="${TOY_SMP:-2}"
     export TOY_SMP
-    echo "qemu: -smp ${TOY_SMP}"
+    toy_qemu_info "qemu: -smp ${TOY_SMP}"
 }
 
 # 从 rootfs/THEME.CFG 读 mode=WxH（系统盘为唯一权威）
@@ -146,13 +153,13 @@ toy_qemu_read_theme_mode() {
     TOY_QEMU_XRES="${TOY_QEMU_XRES:-}"
     TOY_QEMU_YRES="${TOY_QEMU_YRES:-}"
     if [ -n "$TOY_QEMU_XRES" ] && [ -n "$TOY_QEMU_YRES" ]; then
-        echo "qemu: VGA edid ${TOY_QEMU_XRES}x${TOY_QEMU_YRES} (env override)"
+        toy_qemu_info "qemu: VGA edid ${TOY_QEMU_XRES}x${TOY_QEMU_YRES} (env override)"
         return 0
     fi
     if [ ! -f "$Cfg" ]; then
         TOY_QEMU_XRES=1920
         TOY_QEMU_YRES=1080
-        echo "qemu: VGA edid ${TOY_QEMU_XRES}x${TOY_QEMU_YRES} (default; no $Cfg)"
+        toy_qemu_info "qemu: VGA edid ${TOY_QEMU_XRES}x${TOY_QEMU_YRES} (default; no $Cfg)"
         return 0
     fi
     Line="$(grep -E '^[[:space:]]*mode=' "$Cfg" | head -1 || true)"
@@ -161,12 +168,12 @@ toy_qemu_read_theme_mode() {
     if [ -z "$W" ] || [ -z "$H" ]; then
         TOY_QEMU_XRES=1920
         TOY_QEMU_YRES=1080
-        echo "qemu: VGA edid ${TOY_QEMU_XRES}x${TOY_QEMU_YRES} (default; no mode= in $Cfg)"
+        toy_qemu_info "qemu: VGA edid ${TOY_QEMU_XRES}x${TOY_QEMU_YRES} (default; no mode= in $Cfg)"
         return 0
     fi
     TOY_QEMU_XRES="$W"
     TOY_QEMU_YRES="$H"
-    echo "qemu: VGA edid ${TOY_QEMU_XRES}x${TOY_QEMU_YRES} (from $Cfg)"
+    toy_qemu_info "qemu: VGA edid ${TOY_QEMU_XRES}x${TOY_QEMU_YRES} (from $Cfg)"
 }
 
 # 启动盘不应再挂系统文件：把 cwd 上的 Kernel/THEME/ELF 暂存到 .boot-stash/
@@ -187,7 +194,7 @@ toy_qemu_stash_boot_payloads() {
         fi
     done
     if [ -d "$Stash" ] && [ -n "$(ls -A "$Stash" 2>/dev/null || true)" ]; then
-        echo "boot disk: stashed payloads -> $Stash/ (guest loads from rootfs only)"
+        toy_qemu_info "boot disk: stashed payloads -> $Stash/ (guest loads from rootfs only)"
     fi
 }
 
