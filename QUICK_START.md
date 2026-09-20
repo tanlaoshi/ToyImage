@@ -7,12 +7,12 @@
 | 盘 | QEMU 路径 | 内容 |
 |----|-----------|------|
 | **disk0** | cwd（`.`） | ESP / Boot：`EFI/BOOT/BOOTX64.EFI`；启动前会 stash 掉 Kernel/THEME/ELF |
-| **disk1** | `rootfs/` | **TOYOS 系统盘**：`TOYOS.ID`、`Kernel.elf`、`THEME.CFG`、用户 ELF |
+| **disk1** | `RootFs/X64/` | **TOYOS 系统盘**：`TOYOS.ID`、`Kernel.elf`、`THEME.CFG`、用户 ELF |
 
-Guest 侧 ToyBoot **优先**从含 `TOYOS.ID` 的卷加载 `Kernel.elf`。请把内核与主题放在 / 同步进 `rootfs/`（`prepare-rootfs.sh` 会在启动前自动做）。
+Guest 侧 ToyBoot **优先**从含 `TOYOS.ID` 的卷加载 `Kernel.elf`。请把内核与主题放在 / 同步进 `RootFs/X64/`（`prepare-rootfs.sh` 会在启动前自动做）。
 
 ```bash
-cd ../ToyKernel && ./build.sh          # 产物拷到 ToyImage/ 与 rootfs/
+cd ../ToyKernel && ./build.sh          # 产物拷到 ToyImage/ 与 RootFs/X64/
 cd ../ToyImage  && ./run-split.sh
 ```
 
@@ -29,7 +29,7 @@ TOY_SMP=1 ./run-split.sh               # 单核（宿主忙 / CI）
 # （冒烟默认 TOY_NO_HOSTFWD=1，避免 hostfwd 端口占用）
 ```
 
-分辨率：改 `rootfs/THEME.CFG` 的 `mode=WxH` 后 **退出 QEMU 再跑** `./run-split.sh`（Guest reboot 不会改宿主 edid）。
+分辨率：改 `RootFs/X64/THEME.CFG` 的 `mode=WxH` 后 **退出 QEMU 再跑** `./run-split.sh`（Guest reboot 不会改宿主 edid）。
 
 ## SMP / 连环重启排查
 
@@ -42,8 +42,10 @@ TOY_SMP=1 ./run-split.sh               # 单核（宿主忙 / CI）
 ## 冒烟验收
 
 ```bash
-./smoke-boot.sh                 # 默认 TOY_SMP=1
+./smoke-boot.sh                 # x86 OVMF；默认 TOY_SMP=1
 TOY_SMP=2 ./smoke-boot.sh       # 可选双核冒烟
+./smoke-virt.sh                 # Arm64+RiscV 自有 Boot 无头冒烟
+./run-virt-arm.sh --headless    # / ./run-virt-riscv.sh
 ```
 
 成功条件：串口日志出现 `ToyOS ready`。
@@ -88,7 +90,7 @@ cd ToyImage
 ./make-usb-stick.sh --device /dev/sdX --yes --sync
 
 # 日常：当前进展刷到已挂载的 ESP + TOYOS
-./sync-usb.sh              # 同步 Boot + rootfs
+./sync-usb.sh              # 同步 Boot + RootFs/X64
 ./sync-usb.sh --build      # 先 ./build.sh Kernel+Boot 再同步
 ./sync-usb.sh --kernel-only  # 只刷 Kernel.elf（旧 sync-kernel-usb.sh 同效）
 ```

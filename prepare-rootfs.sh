@@ -1,9 +1,9 @@
 #!/bin/bash
-# 把宿主暂存区（ToyImage 根目录）同步到第二盘 rootfs/（TOYOS 系统卷）
-# 规范：Kernel.elf / THEME.CFG / 用户 ELF 等只以 rootfs 为准；启动盘仅保留 EFI。
+# 把宿主暂存区（ToyImage 根目录）同步到第二盘 RootFs/X64/（TOYOS 系统卷）
+# 规范：Kernel.elf / THEME.CFG / 用户 ELF 等只以 RootFs/X64 为准；启动盘仅保留 EFI。
 set -e
 cd "$(dirname "$0")"
-ROOT=rootfs
+ROOT=RootFs/X64
 mkdir -p "$ROOT"
 
 if [ ! -f Kernel.elf ] && [ ! -f "$ROOT/Kernel.elf" ]; then
@@ -11,7 +11,7 @@ if [ ! -f Kernel.elf ] && [ ! -f "$ROOT/Kernel.elf" ]; then
     exit 1
 fi
 
-# 内核：取 Build / cwd 里较新的一份写入 rootfs（避免 QEMU stash 还原的旧 Kernel 盖掉新构建）
+# 内核：取 Build / cwd 里较新的一份写入 RootFs/X64（避免 QEMU stash 还原的旧 Kernel 盖掉新构建）
 BUILD_KERNEL=../ToyKernel/Build/HAL/X64/Kernel.elf
 KERNEL_SRC=
 if [ -f "$BUILD_KERNEL" ]; then
@@ -30,7 +30,7 @@ if [ -n "$KERNEL_SRC" ]; then
     fi
 fi
 
-# 主题：rootfs/THEME.CFG 是唯一权威（Guest Settings / QEMU edid 都认它）。
+# 主题：RootFs/X64/THEME.CFG 是唯一权威（Guest Settings / QEMU edid 都认它）。
 # 勿用 cwd 上较新的旧副本盖掉系统盘（stash 还原曾导致 1280x720→1600x900）。
 if [ -f theme.cfg ]; then
     if [ ! -f THEME.CFG ]; then
@@ -45,7 +45,7 @@ if [ -f "$ROOT/theme.cfg" ]; then
     rm -f "$ROOT/theme.cfg"
 fi
 if [ -f "$ROOT/THEME.CFG" ]; then
-    # 镜像到 cwd 仅供查看；绝不反向覆盖 rootfs
+    # 镜像到 cwd 仅供查看；绝不反向覆盖 RootFs/X64
     cp -f "$ROOT/THEME.CFG" THEME.CFG
 elif [ -f THEME.CFG ]; then
     cp -f THEME.CFG "$ROOT/THEME.CFG"
@@ -119,19 +119,16 @@ mkdir -p "$ROOT/Assets/Packs"
 if [ -d ../ToyKernel/Assets/Packs ]; then
     cp -a ../ToyKernel/Assets/Packs/. "$ROOT/Assets/Packs/" 2>/dev/null || true
 fi
-# PR-S0：已安装 / 缓存目录占位
-mkdir -p "$ROOT/Apps" "$ROOT/Store"
-if [ -d ../ToyKernel/Apps ]; then
-    cp -a ../ToyKernel/Apps/. "$ROOT/Apps/" 2>/dev/null || true
-fi
-if [ -d ../ToyKernel/Store ]; then
-    cp -a ../ToyKernel/Store/. "$ROOT/Store/" 2>/dev/null || true
-fi
+# Guest 可写占位（已装 ELF / 商店缓存）；仓库不再另建 Apps/、StoreCache/
+mkdir -p "$ROOT/Apps" "$ROOT/StoreCache"
 if [ -d Apps ]; then
     cp -a Apps/. "$ROOT/Apps/" 2>/dev/null || true
 fi
-if [ -d Store ]; then
-    cp -a Store/. "$ROOT/Store/" 2>/dev/null || true
+if [ -d StoreCache ]; then
+    cp -a StoreCache/. "$ROOT/StoreCache/" 2>/dev/null || true
+elif [ -d Store ]; then
+    # 兼容旧名 Store/
+    cp -a Store/. "$ROOT/StoreCache/" 2>/dev/null || true
 fi
 
 printf "ToyOS root volume\n" > "$ROOT/TOYOS.ID"

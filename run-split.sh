@@ -1,7 +1,7 @@
 #!/bin/bash
 # 双盘 QEMU（唯一推荐入口）— PR-Q1
 #   disk0 = cwd          → ESP/Boot（仅 EFI/BOOT/BOOTX64.EFI 等）
-#   disk1 = rootfs/      → TOYOS 系统盘（Kernel.elf、THEME.CFG、用户 ELF）
+#   disk1 = RootFs/X64/  → TOYOS 系统盘（Kernel.elf、THEME.CFG、用户 ELF）
 #
 # 常用：
 #   ./run-split.sh
@@ -26,7 +26,7 @@ toy_qemu_parse_args "$@"
 ./prepare-rootfs.sh
 
 # edid 只读系统盘主题，避免与启动盘旧 THEME.CFG 冲突
-toy_qemu_read_theme_mode rootfs/THEME.CFG
+toy_qemu_read_theme_mode RootFs/X64/THEME.CFG
 toy_qemu_setup_ovmf
 toy_qemu_prepare_smp
 
@@ -79,7 +79,7 @@ case "${TOY_DISK:-ide}" in
             -device ich9-ahci,id=ahci
             -drive if=none,id=toyesp,format=raw,file=fat:rw:.
             -device ide-hd,drive=toyesp,bus=ahci.0,bootindex=0
-            -drive if=none,id=toyroot,format=raw,file=fat:rw:rootfs
+            -drive if=none,id=toyroot,format=raw,file=fat:rw:RootFs/X64
             -device ide-hd,drive=toyroot,bus=ahci.1,bootindex=1
         )
         ;;
@@ -88,7 +88,7 @@ case "${TOY_DISK:-ide}" in
         DISK_ARGS=(
             -drive if=none,id=toyesp,format=raw,file=fat:rw:.
             -device nvme,serial=toyesp,drive=toyesp,logical_block_size=512,physical_block_size=512,bootindex=0
-            -drive if=none,id=toyroot,format=raw,file=fat:rw:rootfs
+            -drive if=none,id=toyroot,format=raw,file=fat:rw:RootFs/X64
             -device nvme,serial=toyroot,drive=toyroot,logical_block_size=512,physical_block_size=512,bootindex=1
         )
         ;;
@@ -97,7 +97,7 @@ case "${TOY_DISK:-ide}" in
         DISK_ARGS=(
             -drive if=none,id=toyesp,format=raw,file=fat:rw:.
             -device ide-hd,drive=toyesp,bus=ide.0,unit=0,bootindex=0
-            -drive if=none,id=toyroot,format=raw,file=fat:rw:rootfs
+            -drive if=none,id=toyroot,format=raw,file=fat:rw:RootFs/X64
             -device ide-hd,drive=toyroot,bus=ide.0,unit=1,bootindex=1
         )
         ;;

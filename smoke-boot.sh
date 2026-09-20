@@ -20,7 +20,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-if [ ! -f rootfs/Kernel.elf ] && [ ! -f Kernel.elf ]; then
+if [ ! -f RootFs/X64/Kernel.elf ] && [ ! -f Kernel.elf ]; then
     echo "error: missing Kernel.elf — build ToyKernel first" >&2
     exit 1
 fi

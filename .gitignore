@@ -1,0 +1,17 @@
+# Virt FAT 镜像（prepare-virt-rootfs 生成）
+RootFs/*.img
+
+# virt staging（可再生；仅保留 .gitkeep）
+RootFs/Arm64/*
+!RootFs/Arm64/.gitkeep
+RootFs/RiscV/*
+!RootFs/RiscV/.gitkeep
+
+# OVMF 运行时变量盘（可用 .clean 种子还原）
+OVMF_VARS.fd
+
+# 本机 stash / 临时
+.boot-stash/
+*.log
+*.tmp
+.DS_Store

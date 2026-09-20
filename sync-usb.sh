@@ -3,7 +3,7 @@
 #
 # 真机布局（见 make-usb-stick.sh）：
 #   ESP   → EFI/BOOT/BOOTX64.EFI
-#   TOYOS → rootfs/（Kernel.elf、TOYOS.ID、THEME、Assets、*.ELF…）
+#   TOYOS → RootFs/X64/（Kernel.elf、TOYOS.ID、THEME、Assets、*.ELF…）
 #
 # 用法：
 #   ./sync-usb.sh                 # 自动找 LABEL=ESP 与 LABEL=TOYOS
@@ -146,7 +146,7 @@ if [[ "$KERNEL_ONLY" -eq 1 ]]; then
   SRC=""
   for C in \
     "$ROOT/../ToyKernel/Build/HAL/X64/Kernel.elf" \
-    "$ROOT/rootfs/Kernel.elf" \
+    "$ROOT/RootFs/X64/Kernel.elf" \
     "$ROOT/Kernel.elf"
   do
     if [[ -f "$C" ]]; then SRC="$C"; break; fi
@@ -242,7 +242,7 @@ cp -f "$BOOT_EFI" "$ESP_MNT/EFI/BOOT/BOOTX64.EFI"
 # 可选：若仓库有 startup.nsh 等可在此追加
 sync
 
-echo "== sync TOYOS (rootfs) =="
+echo "== sync TOYOS (RootFs/X64) =="
 # FAT 无 Unix owner/mode；勿用纯 -a（会 chown 失败 → exit 23）
 if command -v rsync >/dev/null 2>&1; then
   rsync -rltD --delete \
@@ -250,10 +250,10 @@ if command -v rsync >/dev/null 2>&1; then
     --exclude 'System Volume Information' \
     --exclude '.Trash*' \
     --exclude 'lost+found' \
-    "$ROOT/rootfs/" "$TOY_MNT/"
+    "$ROOT/RootFs/X64/" "$TOY_MNT/"
 else
   # 粗同步：先拷文件，不 --delete（避免误删用户在 U 盘上的笔记）
-  cp -a "$ROOT/rootfs/." "$TOY_MNT/"
+  cp -a "$ROOT/RootFs/X64/." "$TOY_MNT/"
 fi
 
 if [[ "$SINGLE_FAT" -eq 1 ]]; then
