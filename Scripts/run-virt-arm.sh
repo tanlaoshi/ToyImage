@@ -2,10 +2,12 @@
 # QEMU virt aarch64 验收（PR-V6）— 入口在 ToyImage；内核 ../ToyKernel
 # 自有 Boot：-kernel + DTB loader + ramfb/virtio；不是 run-split.sh / AAVMF。
 set -e
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+IMAGE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$IMAGE_ROOT"
 BOARD=virt
 # shellcheck source=run-virt-common.sh
-source ./run-virt-common.sh
+source "$SCRIPT_DIR/run-virt-common.sh"
 
 TOY_VIRT_ARCH=arm64
 TOY_VIRT_MAKE_ARCH=arm64

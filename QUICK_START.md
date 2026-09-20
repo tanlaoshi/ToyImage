@@ -1,65 +1,70 @@
 # ToyImage 快速开始（PR-Q1）
 
-唯一推荐启动入口：**`./run-split.sh`**（`run.sh` 仅转发到此脚本）。
+唯一推荐启动入口：**`./Scripts/run-split.sh`**（`Scripts/run.sh` 仅转发）。
 
-## 双盘布局
+## 布局（公共与架构分离）
+
+| 路径 | 角色 |
+|------|------|
+| `Assets/` | 公共资源种子（Fonts/Icons/Locale/Images/Store） |
+| `RootFs/{X64,Arm64,RiscV}/` | 各架构 TOYOS 系统盘 |
+| `Esp/X64/` | x86 ESP（`EFI/BOOT/BOOTX64.EFI`） |
+| `Fw/` | OVMF 变量盘种子（`OVMF_VARS.fd.clean`） |
+| `Fixtures/` | 课堂夹具（`msc-stick/`、`store-repo/`） |
+| `Scripts/` | 构建辅助 / QEMU / 冒烟 / U 盘 |
+
+### 双盘 QEMU（x86）
 
 | 盘 | QEMU 路径 | 内容 |
 |----|-----------|------|
-| **disk0** | cwd（`.`） | ESP / Boot：`EFI/BOOT/BOOTX64.EFI`；启动前会 stash 掉 Kernel/THEME/ELF |
-| **disk1** | `RootFs/X64/` | **TOYOS 系统盘**：`TOYOS.ID`、`Kernel.elf`、`THEME.CFG`、用户 ELF |
+| **disk0** | `Esp/X64/` | ESP / Boot |
+| **disk1** | `RootFs/X64/` | `TOYOS.ID`、`Kernel.elf`、`THEME.CFG`、用户 ELF |
 
-Guest 侧 ToyBoot **优先**从含 `TOYOS.ID` 的卷加载 `Kernel.elf`。请把内核与主题放在 / 同步进 `RootFs/X64/`（`prepare-rootfs.sh` 会在启动前自动做）。
+Guest 侧 ToyBoot **优先**从含 `TOYOS.ID` 的卷加载 `Kernel.elf`。`Scripts/prepare-rootfs.sh` 会在启动前把 Build 产物与 `Assets/` 同步进 `RootFs/X64/`。
 
 ```bash
-cd ../ToyKernel && ./build.sh          # 产物拷到 ToyImage/ 与 RootFs/X64/
-cd ../ToyImage  && ./run-split.sh
+cd ../ToyKernel && ./build.sh          # 产物只拷到 ToyImage/RootFs/X64/
+cd ../ToyImage  && ./Scripts/run-split.sh
 ```
 
 ## 常用选项
 
 ```bash
-./run-split.sh --help
-./run-split.sh --kill-qemu             # 杀掉残留 qemu-system-x86_64（防 SIPI/AP 超时）
-TOY_SMP=1 ./run-split.sh               # 单核（宿主忙 / CI）
-./run-split.sh --smp=2                 # 显式双核
-./run-split.sh --headless              # 无 GTK 窗口，串口仍在终端
-./run-split.sh --clean-nvram           # 重置 OVMF 变量盘
-./smoke-boot.sh                        # 冒烟：kill + headless + TOY_SMP=1，等到 ToyOS ready
-# （冒烟默认 TOY_NO_HOSTFWD=1，避免 hostfwd 端口占用）
+./Scripts/run-split.sh --help
+./Scripts/run-split.sh --kill-qemu             # 杀掉残留 qemu-system-x86_64（防 SIPI/AP 超时）
+TOY_SMP=1 ./Scripts/run-split.sh               # 单核（宿主忙 / CI）
+./Scripts/run-split.sh --smp=2                 # 显式双核
+./Scripts/run-split.sh --headless              # 无 GTK 窗口，串口仍在终端
+./Scripts/run-split.sh --clean-nvram           # 重置 OVMF 变量盘
+./Scripts/smoke-boot.sh                        # 冒烟：kill + headless + TOY_SMP=1，等到 ToyOS ready
 ```
 
-分辨率：改 `RootFs/X64/THEME.CFG` 的 `mode=WxH` 后 **退出 QEMU 再跑** `./run-split.sh`（Guest reboot 不会改宿主 edid）。
+分辨率：改 `RootFs/X64/THEME.CFG` 的 `mode=WxH` 后 **退出 QEMU 再跑** `./Scripts/run-split.sh`。
 
 ## SMP / 连环重启排查
 
-残留或过多 QEMU 实例会饿死 SIPI，表现为 AP timeout，严重时整机复位环：
-
-1. `./run-split.sh --kill-qemu` 或 `pkill -9 -f qemu-system-x86_64`
-2. 仍失败则 `TOY_SMP=1 ./run-split.sh`
-3. 内核已在 AP 超时后 **park AP 并单核继续**（串口：`smp: continue single-CPU (AP failed)`），不应再无限重启
+1. `./Scripts/run-split.sh --kill-qemu` 或 `pkill -9 -f qemu-system-x86_64`
+2. 仍失败则 `TOY_SMP=1 ./Scripts/run-split.sh`
+3. 内核已在 AP 超时后 **park AP 并单核继续**
 
 ## 冒烟验收
 
 ```bash
-./smoke-boot.sh                 # x86 OVMF；默认 TOY_SMP=1
-TOY_SMP=2 ./smoke-boot.sh       # 可选双核冒烟
-./smoke-virt.sh                 # Arm64+RiscV 自有 Boot 无头冒烟
-./run-virt-arm.sh --headless    # / ./run-virt-riscv.sh
+./Scripts/smoke-boot.sh                 # x86 OVMF；默认 TOY_SMP=1
+TOY_SMP=2 ./Scripts/smoke-boot.sh       # 可选双核冒烟
+./Scripts/smoke-virt.sh                 # Arm64+RiscV 自有 Boot 无头冒烟
+./Scripts/run-virt-arm.sh --headless    # / ./Scripts/run-virt-riscv.sh
 ```
 
 成功条件：串口日志出现 `ToyOS ready`。
 
 ## 网络课默认路径（PR-N-lwip）
 
-默认内核已编入 **lwIP**（`./build.sh`，`LWIP=0` 可关）。课堂顺序：
-
 ```bash
-# 宿主机另开终端（客户端连 10.0.2.2:8888）
 nc -l -p 8888
 
 cd ../ToyKernel && ./build.sh
-cd ../ToyImage  && ./run-split.sh
+cd ../ToyImage  && ./Scripts/run-split.sh
 ```
 
 Guest Shell：
@@ -69,30 +74,12 @@ ping 10.0.2.2
 lwip on
 dns 10.0.2.2
 exec NETLIB.ELF
-# 或：exec NETDEMO.ELF   （裸 syscall 对照）
 ```
-
-成功看到 `netlib: ok`。未 `lwip on` 时，`ping` / `tcplisten` 等走 **builtin 教学对照栈**。双栈规则与 socket 表见 [`../ToyKernel/ThirdParty/README.md`](../ToyKernel/ThirdParty/README.md)。
 
 ## 真机 U 盘（PR-H0）
 
-课堂双盘可压成 U 盘 **ESP 256MiB + TOYOS 剩余**（GPT）。目标机约定与缺口：
-
-→ [`../ToyKernel/HAL/X64/NOTES-UEFI-PC.md`](../ToyKernel/HAL/X64/NOTES-UEFI-PC.md)  
-→ [`../ToyBoot/README.md`](../ToyBoot/README.md)（Real PC 节）  
-→ [`../ToyKernel/Documents/Done/真机冒烟清单.md`](../ToyKernel/Documents/Done/真机冒烟清单.md)（**PR-PC-smoke**）
-
-### 制作 / 同步脚本
-
 ```bash
-# 一次性：擦盘分区（仅 USB；需 --yes）
-cd ToyImage
-./make-usb-stick.sh --device /dev/sdX --yes --sync
-
-# 日常：当前进展刷到已挂载的 ESP + TOYOS
-./sync-usb.sh              # 同步 Boot + RootFs/X64
-./sync-usb.sh --build      # 先 ./build.sh Kernel+Boot 再同步
-./sync-usb.sh --kernel-only  # 只刷 Kernel.elf（旧 sync-kernel-usb.sh 同效）
+./Scripts/make-usb-stick.sh --device /dev/sdX --yes --sync
+./Scripts/sync-usb.sh              # 同步 Boot + RootFs/X64
+./Scripts/sync-usb.sh --kernel-only  # 只刷 Kernel.elf
 ```
-
-桌面自动挂载后应看到卷标 **ESP** 与 **TOYOS**。Secure Boot 请关。

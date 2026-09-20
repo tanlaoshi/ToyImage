@@ -3,7 +3,9 @@
 # x86 不走这里（用 RootFs/X64 + run-split.sh）。
 # （QEMU fat:rw/vvfat 与 virtio-net 同机时会破坏 TX；N10 改用真 FAT 镜像）
 set -e
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+IMAGE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$IMAGE_ROOT"
 
 ARCH="${TOY_VIRT_MAKE_ARCH:-}"
 HAL_ARCH="${TOY_VIRT_HAL_ARCH:-}"

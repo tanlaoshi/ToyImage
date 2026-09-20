@@ -14,7 +14,8 @@
 # 兼容旧单分区：若只有 TOYOS、没有 ESP，则把 EFI 也写进 TOYOS（单 FAT 布局）。
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DO_BUILD=0
 KERNEL_ONLY=0
 
@@ -146,8 +147,7 @@ if [[ "$KERNEL_ONLY" -eq 1 ]]; then
   SRC=""
   for C in \
     "$ROOT/../ToyKernel/Build/HAL/X64/Kernel.elf" \
-    "$ROOT/RootFs/X64/Kernel.elf" \
-    "$ROOT/Kernel.elf"
+    "$ROOT/RootFs/X64/Kernel.elf"
   do
     if [[ -f "$C" ]]; then SRC="$C"; break; fi
   done
@@ -228,9 +228,9 @@ if [[ "$DO_BUILD" -eq 1 ]]; then
 fi
 
 echo "== prepare-rootfs =="
-(cd "$ROOT" && ./prepare-rootfs.sh)
+"$SCRIPT_DIR/prepare-rootfs.sh"
 
-BOOT_EFI="$ROOT/EFI/BOOT/BOOTX64.EFI"
+BOOT_EFI="$ROOT/Esp/X64/EFI/BOOT/BOOTX64.EFI"
 if [[ ! -f "$BOOT_EFI" ]]; then
   echo "error: missing $BOOT_EFI — build ToyBoot" >&2
   exit 1

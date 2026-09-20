@@ -4,7 +4,9 @@
 #   ./smoke-install.sh
 # 约 1 分钟；进度在终端；成功后自动结束（不必 Ctrl+C）
 set -eu
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+IMAGE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$IMAGE_ROOT"
 
 cleanup() {
   pkill -9 -f 'qemu-system-x86_64' 2>/dev/null || true
@@ -65,7 +67,7 @@ echo "smoke-install: log=$LOG"
     sleep 1
   done
   echo "smoke-install: timeout waiting install: ok" >&2
-) | ./run-split.sh --kill-qemu --headless --smp=1 >>"$LOG" 2>&1 &
+) | "$SCRIPT_DIR/run-split.sh" --kill-qemu --headless --smp=1 >>"$LOG" 2>&1 &
 PIPE_PID=$!
 
 # 父进程：等到 ok / 失败 / 超时，再杀 QEMU（关键：不要干等 QEMU 自己退出）
@@ -97,7 +99,7 @@ if [ "$ok" = 1 ] || tr -d '\r' <"$LOG" | grep -aq 'install: ok'; then
 fi
 echo 'FS-INST: FAIL — full log: '"$LOG"
 echo 'Manual interactive:'
-echo '  TOY_DISK=ahci TOY_INSTALL_DISK=1 ./run-split.sh'
+echo '  TOY_DISK=ahci TOY_INSTALL_DISK=1 "$SCRIPT_DIR/run-split.sh"'
 echo '  toyos> install disks'
 echo '  toyos> install 2 --yes --mib 512'
 exit 1

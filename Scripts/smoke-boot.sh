@@ -1,7 +1,9 @@
 #!/bin/bash
 # PR-Q1：无头冒烟 — 清残留 QEMU、默认单核、等到串口出现 ToyOS ready
 set -eu
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+IMAGE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$IMAGE_ROOT"
 
 export TOY_KILL_QEMU=1
 export TOY_HEADLESS=1
@@ -20,15 +22,15 @@ cleanup() {
 }
 trap cleanup EXIT
 
-if [ ! -f RootFs/X64/Kernel.elf ] && [ ! -f Kernel.elf ]; then
-    echo "error: missing Kernel.elf — build ToyKernel first" >&2
+if [ ! -f RootFs/X64/Kernel.elf ]; then
+    echo "error: missing RootFs/X64/Kernel.elf — build ToyKernel first" >&2
     exit 1
 fi
 
 echo "smoke: TOY_SMP=${TOY_SMP} TOY_DISK=${TOY_DISK:-ide} TOY_NET=${TOY_NET:-virtio} TOY_USB_HUB=${TOY_USB_HUB:-0} TOY_USB_MSC=${TOY_USB_MSC:-0} timeout=${TIMEOUT_SEC}s log=${LOG}"
 rm -f "$LOG"
 : >"$LOG"
-./run-split.sh --kill-qemu --headless --smp="${TOY_SMP}" >"$LOG" 2>&1 &
+"$SCRIPT_DIR/run-split.sh" --kill-qemu --headless --smp="${TOY_SMP}" >"$LOG" 2>&1 &
 QEMU_PID=$!
 
 i=0

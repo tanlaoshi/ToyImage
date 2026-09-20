@@ -55,4 +55,4 @@ demopack|asset|1|INFO.TXT|-|any|Demo asset pack
 
 ## S2 联网
 
-宿主静态树见 [`ToyImage/store-repo/`](../../../ToyImage/store-repo/)；Guest 默认 `store.repo=10.0.2.2:8080`。
+宿主静态树见 [`ToyImage/Fixtures/store-repo/`](../../Fixtures/store-repo/)；Guest 默认 `store.repo=10.0.2.2:8080`。

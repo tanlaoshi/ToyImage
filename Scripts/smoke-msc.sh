@@ -3,6 +3,8 @@
 #   TOY_USB_MSC=1 ./smoke-boot.sh
 # 须已有 Kernel.elf；通过条件：ToyOS ready + boot: msc auto mux ok + keyboard
 set -eu
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+IMAGE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$IMAGE_ROOT"
 export TOY_USB_MSC=1
-exec ./smoke-boot.sh "$@"
+exec "$SCRIPT_DIR/smoke-boot.sh" "$@"

@@ -1,6 +1,8 @@
 #!/bin/bash
 # 已废弃单盘启动：统一走双盘 run-split.sh（Kernel/THEME 只从第二盘 RootFs/X64 读）
 set -e
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+IMAGE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$IMAGE_ROOT"
 echo "note: run.sh -> run-split.sh (ESP + RootFs/X64; payloads on disk1 only)" >&2
-exec ./run-split.sh "$@"
+exec "$SCRIPT_DIR/run-split.sh" "$@"

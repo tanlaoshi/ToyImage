@@ -7,8 +7,16 @@ RootFs/Arm64/*
 RootFs/RiscV/*
 !RootFs/RiscV/.gitkeep
 
-# OVMF 运行时变量盘（可用 .clean 种子还原）
+# OVMF 运行时变量盘（Fw/ 下；可用 .clean 种子还原）
+Fw/OVMF_VARS.fd
 OVMF_VARS.fd
+
+# 根目录不再放构建产物
+/*.ELF
+/*.SO
+/Kernel.elf
+/THEME.CFG
+/theme.cfg
 
 # 本机 stash / 临时
 .boot-stash/

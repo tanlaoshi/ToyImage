@@ -14,16 +14,17 @@
 #   可选：TOY_VIRT_QEMU_EXTRA=(...)  TOY_VIRT_HELLO_PAT=...
 #
 # 用法（经包装脚本）：
-#   ./run-virt-arm.sh              # 默认：窗口 + 盘 + 输入（交互）
-#   ./run-virt-arm.sh --headless   # CI：-nographic 串口冒烟后退出
-#   ./run-virt-arm.sh --serial     # 无 ramfb 的 A8 串口子集冒烟
-#   ./run-virt-arm.sh --help
+#   ./Scripts/run-virt-arm.sh              # 默认：窗口 + 盘 + 输入（交互）
+#   ./Scripts/run-virt-arm.sh --headless   # CI：-nographic 串口冒烟后退出
+#   ./Scripts/run-virt-arm.sh --serial     # 无 ramfb 的 A8 串口子集冒烟
+#   ./Scripts/run-virt-arm.sh --help
 
 # 本脚本位于 ToyImage/；内核树在旁仓 ToyKernel/
 toy_virt_paths() {
     local Here
     Here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    TOY_IMAGE="${TOY_IMAGE:-$Here}"
+    # Scripts/ 下；仓根为父目录
+    TOY_IMAGE="${TOY_IMAGE:-$(cd "$Here/.." && pwd)}"
     if [ -z "${TOY_KERNEL:-}" ]; then
         TOY_KERNEL="$(cd "$TOY_IMAGE/../ToyKernel" && pwd)"
     fi
@@ -34,7 +35,7 @@ toy_virt_usage() {
     cat <<'EOF'
 ToyOS virt 验收（自有 Boot；脚本在 ToyImage，内核在 ../ToyKernel）
 
-  ./run-virt-arm.sh | ./run-virt-riscv.sh [选项] [Kernel.elf]
+  ./Scripts/run-virt-arm.sh | ./Scripts/run-virt-riscv.sh [选项] [Kernel.elf]
 
 选项：
   （默认）         图形窗口 + virtio-blk + virtio-net + 键鼠；串口 mon:stdio 交互
@@ -179,7 +180,7 @@ toy_virt_build_dev_args() {
     if [ "${TOY_VIRT_NODISK:-0}" != "1" ]; then
         export TOY_VIRT_MAKE_ARCH TOY_VIRT_HAL_ARCH
         toy_virt_paths
-        "$TOY_IMAGE/prepare-virt-rootfs.sh" >/dev/null
+        "$TOY_IMAGE/Scripts/prepare-virt-rootfs.sh" >/dev/null
         # N10：用 raw FAT 镜像，避免 QEMU fat:rw(vvfat) 与 virtio-net 同机 TX 故障
         DEV_ARGS+=(-drive "if=none,id=toyroot,format=raw,file=$TOY_IMAGE/RootFs/${TOY_VIRT_HAL_ARCH}.img"
                    -device virtio-blk-device,drive=toyroot)

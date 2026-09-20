@@ -7,10 +7,10 @@ on:
   push:
     branches: [master]
     paths:
-      - 'run-split.sh'
-      - 'toy-qemu-lib.sh'
-      - 'smoke-boot.sh'
-      - 'prepare-rootfs.sh'
+      - 'Scripts/run-split.sh'
+      - 'Scripts/toy-qemu-lib.sh'
+      - 'Scripts/smoke-boot.sh'
+      - 'Scripts/prepare-rootfs.sh'
       - '.github/workflows/smoke.yml'
 
 jobs:
@@ -38,9 +38,9 @@ jobs:
         run: |
           cd ToyKernel
           ./build.sh x86_64
-          test -f ../ToyImage/rootfs/Kernel.elf -o -f ../ToyImage/Kernel.elf
+          test -f ../ToyImage/RootFs/X64/Kernel.elf
 
       - name: Smoke boot (TOY_SMP=1)
         run: |
           cd ToyImage
-          TOY_SMP=1 SMOKE_TIMEOUT=120 ./smoke-boot.sh
+          TOY_SMP=1 SMOKE_TIMEOUT=120 ./Scripts/smoke-boot.sh
