@@ -1,5 +1,4 @@
-# Optional smoke boot with TOY_SMP=1 (PR-Q1)
-# Needs sibling ToyKernel checkout + qemu + OVMF on the runner.
+# Smoke boot (PR-CI-2：lwIP + ubuntu-24.04；Kernel 推送另由 Kernel build.yml smoke job 覆盖)
 name: smoke
 
 on:
@@ -12,10 +11,19 @@ on:
       - 'Scripts/smoke-boot.sh'
       - 'Scripts/prepare-rootfs.sh'
       - '.github/workflows/smoke.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'Scripts/run-split.sh'
+      - 'Scripts/toy-qemu-lib.sh'
+      - 'Scripts/smoke-boot.sh'
+      - 'Scripts/prepare-rootfs.sh'
+      - '.github/workflows/smoke.yml'
 
 jobs:
   boot:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - name: Checkout ToyImage
         uses: actions/checkout@v4
@@ -28,11 +36,16 @@ jobs:
           repository: tanlaoshi/ToyKernel
           path: ToyKernel
 
-      - name: Install QEMU + OVMF
+      - name: Install QEMU + OVMF + build tools
         run: |
           sudo apt-get update
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
-            qemu-system-x86 ovmf gcc binutils make
+            qemu-system-x86 ovmf build-essential gcc make
+
+      - name: Clone lwIP
+        run: |
+          git clone --depth 1 --branch STABLE-2_2_0_RELEASE \
+            https://github.com/lwip-tcpip/lwip.git ToyKernel/ThirdParty/lwip
 
       - name: Build kernel into ToyImage
         run: |
