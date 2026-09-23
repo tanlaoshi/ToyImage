@@ -1,0 +1,11 @@
+# TOYOS.DB
+desktop=808080
+shell=c0c0c0
+font=2
+mode=1920x1080
+scale=100
+fade=6
+si.guidemo=app|GUIDEMO.ELF
+sd.guidemo=demopack,sun8
+si.cat=app|CAT.ELF
+si.demopack=asset|INFO.TXT
