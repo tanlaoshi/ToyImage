@@ -8,6 +8,7 @@
 #   ./Scripts/run-split.sh --kill-qemu
 #   TOY_SMP=1 ./Scripts/run-split.sh
 #   ./Scripts/run-split.sh --headless
+#   TOY_MEM=2G ./Scripts/run-split.sh        # 默认 1024M（1G）
 #   TOY_DISK=ahci ./Scripts/run-split.sh
 #   TOY_DISK=nvme ./Scripts/run-split.sh
 #   TOY_NET=e1000 ./Scripts/run-split.sh
@@ -136,12 +137,15 @@ if [ "${TOY_HEADLESS:-0}" = 1 ] || [ "${TOY_NO_REBOOT:-0}" = 1 ]; then
     NO_REBOOT_ARGS=(-no-reboot)
 fi
 
+MEM="${TOY_MEM:-1024M}"
+toy_qemu_info "qemu: mem=${MEM}"
+
 qemu-system-x86_64 \
     -name "ToyOS",process=qemu-system-x86_64 \
     -drive if=pflash,format=raw,readonly=on,file="$CODE" \
     -drive if=pflash,format=raw,file=Fw/OVMF_VARS.fd \
     "${DISK_ARGS[@]}" \
-    -m 512M \
+    -m "$MEM" \
     -smp "$TOY_SMP" \
     -device VGA,edid=on,xres="${TOY_QEMU_XRES}",yres="${TOY_QEMU_YRES}" \
     "${DISPLAY_ARGS[@]}" \
