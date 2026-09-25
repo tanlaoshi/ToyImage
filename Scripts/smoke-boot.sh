@@ -27,7 +27,7 @@ if [ ! -f RootFs/X64/Kernel.elf ]; then
     exit 1
 fi
 
-echo "smoke: TOY_SMP=${TOY_SMP} TOY_DISK=${TOY_DISK:-ide} TOY_NET=${TOY_NET:-virtio} TOY_USB_HUB=${TOY_USB_HUB:-0} TOY_USB_MSC=${TOY_USB_MSC:-0} timeout=${TIMEOUT_SEC}s log=${LOG}"
+echo "smoke: TOY_SMP=${TOY_SMP} TOY_DISK=${TOY_DISK:-ide} TOY_NET=${TOY_NET:-virtio} TOY_USB_HUB=${TOY_USB_HUB:-0} TOY_USB_MSC=${TOY_USB_MSC:-0} TOY_USB_SERIAL=${TOY_USB_SERIAL:-0} timeout=${TIMEOUT_SEC}s log=${LOG}"
 rm -f "$LOG"
 : >"$LOG"
 "$SCRIPT_DIR/run-split.sh" --kill-qemu --headless --smp="${TOY_SMP}" >"$LOG" 2>&1 &
@@ -98,6 +98,25 @@ while [ "$i" -lt "$TIMEOUT_SEC" ]; do
             fi
             if ! tr -d '\r' <"$LOG" | grep -E 'Boot: XHCI-HID Keyboard|Boot: PS2-KBD Keyboard' >/dev/null 2>&1; then
                 echo "smoke: FAIL — msc smoke lost keyboard backend" >&2
+                exit 1
+            fi
+        fi
+        # PR-H-usb-uart：TOY_USB_SERIAL=1 → QEMU usb-serial(=FTDI) 认领 + chardev TX
+        if [ "${TOY_USB_SERIAL:-0}" = 1 ]; then
+            CDC_LOG="${TOY_USB_SERIAL_LOG:-/tmp/toy-usb-uart-cdc.log}"
+            if tr -d '\r' <"$LOG" | grep -F 'boot: usb-uart ftdi' >/dev/null 2>&1; then
+                echo "smoke: PASS — usb-uart ftdi via QEMU usb-serial"
+            else
+                echo "smoke: FAIL — TOY_USB_SERIAL=1 but no boot: usb-uart ftdi" >&2
+                tr -d '\r' <"$LOG" | grep -iE 'usb-uart|ftdi|cdc' | tail -20 >&2 || true
+                exit 1
+            fi
+            if tr -d '\r' <"$CDC_LOG" 2>/dev/null | grep -F 'boot: usb-uart ftdi' >/dev/null 2>&1 || \
+               tr -d '\r' <"$CDC_LOG" 2>/dev/null | grep -F 'ToyOS ready' >/dev/null 2>&1; then
+                echo "smoke: PASS — usb-uart TX on usb-serial chardev"
+            else
+                echo "smoke: FAIL — usb-serial chardev has no tee output ($CDC_LOG)" >&2
+                tr -d '\r' <"$CDC_LOG" 2>/dev/null | tail -40 >&2 || true
                 exit 1
             fi
         fi

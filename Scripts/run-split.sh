@@ -48,6 +48,19 @@ else
     USB_ARGS=(-device usb-kbd,bus=xhci.0 -device usb-tablet,bus=xhci.0)
 fi
 
+# PR-H-usb-uart：QEMU usb-serial 实为 FTDI（VID 0x0403），不是 CDC-ACM。
+# 用于课堂验 FTDI TX tee；CDC 认领仅当真机/仿真出现 0x02/0x0A 描述符时。
+CDC_CHARDEV_ARGS=()
+if [ "${TOY_USB_SERIAL:-0}" = 1 ]; then
+    TOY_USB_SERIAL_LOG="${TOY_USB_SERIAL_LOG:-/tmp/toy-usb-uart-cdc.log}"
+    : >"$TOY_USB_SERIAL_LOG"
+    CDC_CHARDEV_ARGS=(
+        -chardev "file,id=toycdc,path=${TOY_USB_SERIAL_LOG},append=on"
+        -device usb-serial,bus=xhci.0,chardev=toycdc
+    )
+    toy_qemu_info "qemu: TOY_USB_SERIAL=1 (usb-serial=FTDI → $TOY_USB_SERIAL_LOG)"
+fi
+
 MSC_DISK_ARGS=()
 if [ "${TOY_USB_MSC:-0}" = 1 ]; then
     if [ ! -d Fixtures/msc-stick ] || [ ! -f Fixtures/msc-stick/TOYOS.ID ]; then
@@ -151,6 +164,7 @@ qemu-system-x86_64 \
     "${DISPLAY_ARGS[@]}" \
     -device qemu-xhci,id=xhci \
     "${USB_ARGS[@]}" \
+    "${CDC_CHARDEV_ARGS[@]}" \
     "${MSC_DISK_ARGS[@]}" \
     -netdev "${NETDEV_ARGS[@]}" \
     "${NET_ARGS[@]}" \
