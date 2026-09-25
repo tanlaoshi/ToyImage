@@ -80,8 +80,17 @@ if [ -d ../ToyKernel/Assets/Packs ]; then
     cp -a ../ToyKernel/Assets/Packs/. "$ROOT/Assets/Packs/" 2>/dev/null || true
 fi
 
-# Guest 可写占位
+# Guest 可写占位；已装 Apps/StoreCache 与根目录 ELF 对齐（防旧号段残留）
 mkdir -p "$ROOT/Apps" "$ROOT/StoreCache"
+if [ -f "$ROOT/HELLO.ELF" ]; then
+    mkdir -p "$ROOT/Apps/hello"
+    cp -f "$ROOT/HELLO.ELF" "$ROOT/Apps/hello/HELLO.ELF"
+    cp -f "$ROOT/HELLO.ELF" "$ROOT/StoreCache/HELLO.ELF"
+fi
+if [ -f "$ROOT/GUIDEMO.ELF" ]; then
+    mkdir -p "$ROOT/Apps/guidemo"
+    cp -f "$ROOT/GUIDEMO.ELF" "$ROOT/Apps/guidemo/GUIDEMO.ELF"
+fi
 
 printf "ToyOS root volume\n" > "$ROOT/TOYOS.ID"
 if [ "${TOY_QEMU_VERBOSE:-0}" = 1 ]; then
