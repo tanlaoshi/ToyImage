@@ -27,7 +27,7 @@ if [ ! -f RootFs/X64/Kernel.elf ]; then
     exit 1
 fi
 
-echo "smoke: TOY_SMP=${TOY_SMP} TOY_DISK=${TOY_DISK:-ide} TOY_NET=${TOY_NET:-virtio} TOY_USB_HUB=${TOY_USB_HUB:-0} TOY_USB_MSC=${TOY_USB_MSC:-0} TOY_USB_SERIAL=${TOY_USB_SERIAL:-0} timeout=${TIMEOUT_SEC}s log=${LOG}"
+echo "smoke: TOY_SMP=${TOY_SMP} TOY_DISK=${TOY_DISK:-ide} TOY_NET=${TOY_NET:-virtio} TOY_USB_HUB=${TOY_USB_HUB:-0} TOY_USB_MSC=${TOY_USB_MSC:-0} TOY_USB_SERIAL=${TOY_USB_SERIAL:-0} TOY_USB_UHCI=${TOY_USB_UHCI:-0} timeout=${TIMEOUT_SEC}s log=${LOG}"
 rm -f "$LOG"
 : >"$LOG"
 "$SCRIPT_DIR/run-split.sh" --kill-qemu --headless --smp="${TOY_SMP}" >"$LOG" 2>&1 &
@@ -117,6 +117,17 @@ while [ "$i" -lt "$TIMEOUT_SEC" ]; do
             else
                 echo "smoke: FAIL — usb-serial chardev has no tee output ($CDC_LOG)" >&2
                 tr -d '\r' <"$CDC_LOG" 2>/dev/null | tail -40 >&2 || true
+                exit 1
+            fi
+        fi
+        # PR-H-uhci-1：TOY_USB_UHCI=1 → piix3-usb-uhci + mouse → Boot: UHCI CCS
+        if [ "${TOY_USB_UHCI:-0}" = 1 ]; then
+            if tr -d '\r' <"$LOG" | grep -E 'Boot: UHCI#|Boot: UHCI CCS' >/dev/null 2>&1; then
+                echo "smoke: PASS — UHCI probe/CCS (PR-H-uhci-1)"
+                tr -d '\r' <"$LOG" | grep -E 'Boot: UHCI#|Boot: UHCI CCS' | tail -3 || true
+            else
+                echo "smoke: FAIL — TOY_USB_UHCI=1 but no Boot: UHCI line" >&2
+                tr -d '\r' <"$LOG" | grep -iE 'uhci|UHCI' | tail -20 >&2 || true
                 exit 1
             fi
         fi

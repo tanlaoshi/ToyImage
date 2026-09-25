@@ -14,6 +14,7 @@
 #   TOY_NET=e1000 ./Scripts/run-split.sh
 #   TOY_USB_HUB=1 ./Scripts/run-split.sh
 #   TOY_USB_MSC=1 ./Scripts/run-split.sh   # Fixtures/msc-stick/
+#   TOY_USB_UHCI=1 ./Scripts/run-split.sh  # piix3-usb-uhci + mouse（PR-H-uhci-1）
 set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 IMAGE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -41,6 +42,12 @@ if [ "${TOY_HEADLESS:-0}" = 1 ]; then
 fi
 
 USB_ARGS=()
+UHCI_ARGS=()
+if [ "${TOY_USB_UHCI:-0}" = 1 ]; then
+    # i440fx：piix3-usb-uhci；挂一只鼠造 CCS≠0
+    UHCI_ARGS=(-device piix3-usb-uhci,id=uhci -device usb-mouse,bus=uhci.0)
+    toy_qemu_info "qemu: TOY_USB_UHCI=1 (piix3-usb-uhci + usb-mouse)"
+fi
 if [ "${TOY_USB_HUB:-0}" = 1 ]; then
     USB_ARGS=(-device usb-hub,bus=xhci.0,port=1 -device usb-kbd,bus=xhci.0,port=1.1 -device usb-tablet,bus=xhci.0,port=2)
     toy_qemu_info "qemu: TOY_USB_HUB=1 (kbd behind hub port 1.1)"
@@ -164,6 +171,7 @@ qemu-system-x86_64 \
     "${DISPLAY_ARGS[@]}" \
     -device qemu-xhci,id=xhci \
     "${USB_ARGS[@]}" \
+    "${UHCI_ARGS[@]}" \
     "${CDC_CHARDEV_ARGS[@]}" \
     "${MSC_DISK_ARGS[@]}" \
     -netdev "${NETDEV_ARGS[@]}" \
