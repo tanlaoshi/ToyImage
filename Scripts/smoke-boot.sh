@@ -68,6 +68,13 @@ while [ "$i" -lt "$TIMEOUT_SEC" ]; do
         else
             echo "smoke: WARN — no Boot: *Keyboard line (headless may still PASS)" >&2
         fi
+        # PR-H-ps2-aux：QEMU i8042 常有 Aux；真机触控板另手测
+        if tr -d '\r' <"$LOG" | grep -F 'Boot: PS2-AUX Mouse' >/dev/null 2>&1; then
+            echo "smoke: PASS — PS/2 Aux mouse (PR-H-ps2-aux)"
+            tr -d '\r' <"$LOG" | grep -F 'Boot: PS2-AUX' | tail -1 || true
+        elif tr -d '\r' <"$LOG" | grep -F 'Boot: PS2-KBD Keyboard' >/dev/null 2>&1; then
+            echo "smoke: WARN — PS2-KBD ok but no PS2-AUX (ok if no Aux)" >&2
+        fi
         # QEMU 可见 MSI（课堂 dual 形）；真机 base=poll，dual 另刀
         if tr -d '\r' <"$LOG" | grep -E 'Boot: XHCI IRQ=MSI' >/dev/null 2>&1; then
             echo "smoke: PASS — xhci irq=msi (QEMU; real-PC H-xhci-base then dual)"
