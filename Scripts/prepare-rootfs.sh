@@ -56,6 +56,12 @@ mkdir -p "$ROOT/Assets/Icons" "$ROOT/Assets/Images"
 if [ -d Assets ]; then
     cp -a Assets/. "$ROOT/Assets/"
 fi
+# 无线固件（PR-N-wifi-1）：须随 TOYOS 进 U 盘；缺则 iwl fw=miss
+if [ ! -f "$ROOT/FW/IWL8265.UCODE" ]; then
+    echo "warning: $ROOT/FW/IWL8265.UCODE missing — sync-usb will warn; NUC iwl needs it" >&2
+elif [ "${TOY_QEMU_VERBOSE:-0}" = 1 ]; then
+    echo "FW/IWL8265.UCODE present ($(stat -c%s "$ROOT/FW/IWL8265.UCODE") bytes)"
+fi
 if [ ! -f "$ROOT/Assets/Images/WALL.BMP" ] && [ -f ../ToyKernel/Assets/Images/WALL.BMP ]; then
     cp -f ../ToyKernel/Assets/Images/WALL.BMP "$ROOT/Assets/Images/WALL.BMP"
 fi

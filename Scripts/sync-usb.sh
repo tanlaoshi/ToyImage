@@ -3,12 +3,12 @@
 #
 # 真机布局（见 make-usb-stick.sh）：
 #   ESP   → EFI/BOOT/BOOTX64.EFI
-#   TOYOS → RootFs/X64/（Kernel.elf、TOYOS.ID、THEME、Assets、*.ELF…）
+#   TOYOS → RootFs/X64/（Kernel.elf、TOYOS.ID、THEME、Assets、FW/、*.ELF…）
 #
 # 用法：
 #   ./sync-usb.sh                 # 自动找 LABEL=ESP 与 LABEL=TOYOS
 #   ./sync-usb.sh --build         # 先编 Kernel + Boot，再 prepare-rootfs，再同步
-#   ./sync-usb.sh --kernel-only   # 只更新 TOYOS/Kernel.elf（快迭代）
+#   ./sync-usb.sh --kernel-only   # 只更新 TOYOS/Kernel.elf + FW/（快迭代；含 iwl 固件）
 #   TOY_ESP_MNT=/mnt/esp TOY_TOYOS_MNT=/mnt/toy ./sync-usb.sh
 #
 # 兼容旧单分区：若只有 TOYOS、没有 ESP，则把 EFI 也写进 TOYOS（单 FAT 布局）。
@@ -18,6 +18,29 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DO_BUILD=0
 KERNEL_ONLY=0
+
+# TOYOS 卷上的无线固件目录（PR-N-wifi-1：FW/IWL8265.UCODE）
+sync_toyos_fw() {
+  local Dest="$1"
+  local SrcFw="$ROOT/RootFs/X64/FW"
+  if [[ ! -d "$SrcFw" ]]; then
+    echo "warning: missing $SrcFw — iwl8265 will fw=miss until FW/ is present" >&2
+    return 0
+  fi
+  mkdir -p "$Dest/FW"
+  if command -v rsync >/dev/null 2>&1; then
+    rsync -rltD --delete \
+      --no-owner --no-group --no-perms \
+      "$SrcFw/" "$Dest/FW/"
+  else
+    cp -a "$SrcFw/." "$Dest/FW/"
+  fi
+  if [[ -f "$Dest/FW/IWL8265.UCODE" ]]; then
+    echo "FW/IWL8265.UCODE -> $Dest/FW/ ($(stat -c%s "$Dest/FW/IWL8265.UCODE") bytes)"
+  else
+    echo "warning: $Dest/FW/ has no IWL8265.UCODE" >&2
+  fi
+}
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -161,6 +184,7 @@ if [[ "$KERNEL_ONLY" -eq 1 ]]; then
     exit 1
   fi
   cp -f "$SRC" "$TOY_MNT/Kernel.elf"
+  sync_toyos_fw "$TOY_MNT"
   if [[ ! -f "$TOY_MNT/TOYOS.ID" ]]; then
     printf "ToyOS root volume\n" > "$TOY_MNT/TOYOS.ID"
     echo "note: wrote $TOY_MNT/TOYOS.ID (UEFI Boot 靠它认系统盘)"
@@ -170,6 +194,8 @@ if [[ "$KERNEL_ONLY" -eq 1 ]]; then
   echo "TOYOS -> $TOY_MNT"
   echo "src   -> $SRC"
   ls -l --time-style=long-iso "$SRC" "$TOY_MNT/Kernel.elf" "$TOY_MNT/TOYOS.ID"
+  ls -l --time-style=long-iso "$TOY_MNT/FW/IWL8265.UCODE" 2>/dev/null || \
+    echo "note: FW/IWL8265.UCODE missing on TOYOS (wifi fw=miss)"
   md5sum "$SRC" "$TOY_MNT/Kernel.elf"
   echo
   echo "Boot loads Kernel from TOYOS via TOYOS.ID. Do not put Kernel.elf on ESP."
@@ -255,6 +281,8 @@ else
   # 粗同步：先拷文件，不 --delete（避免误删用户在 U 盘上的笔记）
   cp -a "$ROOT/RootFs/X64/." "$TOY_MNT/"
 fi
+# 显式再扫一眼 FW/（rsync 已含；无目录时给警告）
+sync_toyos_fw "$TOY_MNT"
 
 if [[ "$SINGLE_FAT" -eq 1 ]]; then
   # 仅单分区盘：启动与系统同卷，EFI 只能放 TOYOS
@@ -279,5 +307,7 @@ echo "=== sync done ==="
 echo "ESP BOOTX64.EFI : $(stat -c%s "$ESP_MNT/EFI/BOOT/BOOTX64.EFI") bytes"
 echo "TOYOS Kernel    : $(stat -c%s "$TOY_MNT/Kernel.elf") bytes"
 ls -lh "$TOY_MNT/Kernel.elf" "$TOY_MNT/TOYOS.ID" "$TOY_MNT/THEME.CFG" 2>/dev/null || true
+ls -lh "$TOY_MNT/FW/IWL8265.UCODE" 2>/dev/null || \
+  echo "warning: TOYOS missing FW/IWL8265.UCODE (iwl fw=miss)"
 echo
 echo "Boot Menu: select this USB (UEFI). Expect GOP desktop / ToyOS ready."
