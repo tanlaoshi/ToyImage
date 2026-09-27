@@ -6,5 +6,5 @@ QEMU maps this directory as `fat:rw:msc-stick` on xHCI.
 - `TOYOS.ID` — marks a ToyOS volume for `MountAllVolumes`
 - `MSCDSMO.TXT` — marker file for classroom checks
 
-Default IDE `rootfs/` still boots the system disk; this stick exercises
+Default IDE disk `RootFs/X64/` still boots the system disk; this stick exercises
 USB MSC auto (msc-7b): serial should show `boot: msc auto mux ok`.
