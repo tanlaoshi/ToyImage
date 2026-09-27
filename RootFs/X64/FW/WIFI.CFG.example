@@ -1,0 +1,14 @@
+# ToyOS Wi-Fi config example (do NOT commit real passwords)
+
+# Copy to FW/WIFI.CFG on the USB TOYOS volume (same folder as IWL8265.UCODE).
+# Do NOT put a real WIFI.CFG in the repo — sync-usb preserves the stick's copy
+# and will not overwrite/delete FW/WIFI.CFG on TOYOS.
+# sync-usb.sh still syncs FW/*.UCODE and WIFI.CFG.example.
+
+SSID=classroom
+PSK=change-me
+
+# Rules:
+# - WPA2-PSK only for PR-N-wifi-2 acceptance (open is not TG).
+# - Never log PSK to serial.
+# - Missing / bad CFG → soft-fail (desktop still boots; no NetAttachNic).

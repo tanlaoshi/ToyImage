@@ -1,4 +1,4 @@
-ToyOS FW/ — wireless firmware blobs (classroom)
+ToyOS FW/ — wireless firmware + Wi-Fi config (classroom)
 
 IWL8265.UCODE
   Chip: Intel Wireless 8265/8275 (PCI 8086:24fd)
@@ -10,4 +10,16 @@ IWL8265.UCODE
            Do not claim as original; keep this notice with the blob.
   Guest path: FW/IWL8265.UCODE  (FileSystemReadFile)
 
-Driver loads this in PR-N-wifi-1 (Iwl). Missing file → soft-fail, desktop OK.
+WIFI.CFG  (PR-N-wifi-2)
+  Guest path: FW/WIFI.CFG
+  Format (THEME.CFG style, one key per line):
+    SSID=your-ap-name
+    PSK=your-wpa2-passphrase
+  Example only (no real secrets): WIFI.CFG.example
+  Real classroom WIFI.CFG stays on the USB stick — do not commit passwords.
+  sync-usb preserves FW/WIFI.CFG on TOYOS (exclude + no overwrite).
+  Missing CFG / bad PSK / no AP → soft-fail; desktop OK; no NetAttachNic.
+  Driver never prints PSK to serial.
+
+Driver: HAL/X64/Drivers/Iwl (iwl8265). Missing ucode → Probe soft-fail.
+sync-usb.sh copies the whole FW/ tree next to Kernel.elf.
