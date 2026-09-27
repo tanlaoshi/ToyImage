@@ -39,12 +39,13 @@ if [ -f "$ROOT/theme.cfg" ]; then
 fi
 if [ ! -f "$ROOT/THEME.CFG" ]; then
     cat > "$ROOT/THEME.CFG" <<'EOF'
-desktop=404040
+desktop=808080
 shell=c0c0c0
 font=0
 mode=1920x1080
+wallpaper=0
 EOF
-    if [ "${TOY_QEMU_VERBOSE:-0}" = 1 ]; then echo "Prepared THEME.CFG -> $ROOT/ (default 1920x1080)"; fi
+    if [ "${TOY_QEMU_VERBOSE:-0}" = 1 ]; then echo "Prepared THEME.CFG -> $ROOT/ (default 1920x1080, solid grey)"; fi
 fi
 chmod u+rw "$ROOT/THEME.CFG" "$ROOT/TOYOS.DB" 2>/dev/null || true
 if [ -f "$ROOT/THEME.CFG" ] && [ ! -w "$ROOT/THEME.CFG" ]; then
