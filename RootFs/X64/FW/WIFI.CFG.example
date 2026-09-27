@@ -1,9 +1,14 @@
 # ToyOS Wi-Fi config example (do NOT commit real passwords)
 
-# Copy to FW/WIFI.CFG on the USB TOYOS volume (same folder as IWL8265.UCODE).
-# Do NOT put a real WIFI.CFG in the repo — sync-usb preserves the stick's copy
-# and will not overwrite/delete FW/WIFI.CFG on TOYOS.
-# sync-usb.sh still syncs FW/*.UCODE and WIFI.CFG.example.
+# On the USB TOYOS volume (same folder as IWL8265.UCODE):
+#   WIFI_H.CFG  — home
+#   WIFI_C.CFG  — company / classroom
+#   WIFI.CFG    — active (kernel reads only this name)
+# Switch site:  cp FW/WIFI_H.CFG FW/WIFI.CFG   # or WIFI_C.CFG
+#
+# Do NOT put real WIFI*.CFG (with PSK) in the repo.
+# sync-usb preserves WIFI.CFG / WIFI_H.CFG / WIFI_C.CFG on the stick.
+# Repo still syncs FW/*.UCODE and this WIFI.CFG.example.
 
 SSID=classroom
 PSK=change-me

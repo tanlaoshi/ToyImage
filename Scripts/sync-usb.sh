@@ -20,7 +20,7 @@ DO_BUILD=0
 KERNEL_ONLY=0
 
 # TOYOS 卷上的无线固件目录（PR-N-wifi-1：FW/IWL8265.UCODE）
-# WIFI.CFG 含课网 PSK：只活在 U 盘上；同步时保留、不覆盖、不 --delete 掉。
+# WIFI.CFG / WIFI_H.CFG / WIFI_C.CFG 含 PSK：只活在 U 盘上；同步时保留、不覆盖、不 --delete。
 sync_toyos_fw() {
   local Dest="$1"
   local SrcFw="$ROOT/RootFs/X64/FW"
@@ -32,17 +32,21 @@ sync_toyos_fw() {
   if command -v rsync >/dev/null 2>&1; then
     rsync -rltD --delete \
       --exclude 'WIFI.CFG' \
+      --exclude 'WIFI_H.CFG' \
+      --exclude 'WIFI_C.CFG' \
       --no-owner --no-group --no-perms \
       "$SrcFw/" "$Dest/FW/"
   else
-    # 无 rsync：逐文件拷；已有 WIFI.CFG 不覆盖
+    # 无 rsync：逐文件拷；已有 WIFI*.CFG 不覆盖
     local f
     for f in "$SrcFw"/*; do
       [[ -e "$f" ]] || continue
       local base
       base="$(basename "$f")"
-      if [[ "$base" == "WIFI.CFG" && -f "$Dest/FW/WIFI.CFG" ]]; then
-        continue
+      if [[ "$base" == "WIFI.CFG" || "$base" == "WIFI_H.CFG" || "$base" == "WIFI_C.CFG" ]]; then
+        if [[ -f "$Dest/FW/$base" ]]; then
+          continue
+        fi
       fi
       cp -f "$f" "$Dest/FW/"
     done
@@ -55,7 +59,7 @@ sync_toyos_fw() {
   if [[ -f "$Dest/FW/WIFI.CFG" ]]; then
     echo "FW/WIFI.CFG kept on TOYOS (not overwritten by sync)"
   else
-    echo "note: no FW/WIFI.CFG on TOYOS — copy from WIFI.CFG.example (iwl cfg=miss)"
+    echo "note: no FW/WIFI.CFG on TOYOS — cp WIFI_H.CFG or WIFI_C.CFG → WIFI.CFG"
   fi
 }
 
@@ -296,12 +300,14 @@ if command -v rsync >/dev/null 2>&1; then
     --exclude '.Trash*' \
     --exclude 'lost+found' \
     --exclude 'FW/WIFI.CFG' \
+    --exclude 'FW/WIFI_H.CFG' \
+    --exclude 'FW/WIFI_C.CFG' \
     "$ROOT/RootFs/X64/" "$TOY_MNT/"
 else
   # 粗同步：先拷文件，不 --delete（避免误删用户在 U 盘上的笔记）
   cp -a "$ROOT/RootFs/X64/." "$TOY_MNT/"
 fi
-# 显式再扫一眼 FW/（rsync 已含；WIFI.CFG 在 U 盘侧保留）
+# 显式再扫一眼 FW/（rsync 已含；WIFI*.CFG 在 U 盘侧保留）
 sync_toyos_fw "$TOY_MNT"
 
 if [[ "$SINGLE_FAT" -eq 1 ]]; then
@@ -329,8 +335,8 @@ echo "TOYOS Kernel    : $(stat -c%s "$TOY_MNT/Kernel.elf") bytes"
 ls -lh "$TOY_MNT/Kernel.elf" "$TOY_MNT/TOYOS.ID" "$TOY_MNT/THEME.CFG" 2>/dev/null || true
 ls -lh "$TOY_MNT/FW/IWL8265.UCODE" 2>/dev/null || \
   echo "warning: TOYOS missing FW/IWL8265.UCODE (iwl fw=miss)"
-ls -lh "$TOY_MNT/FW/WIFI.CFG" 2>/dev/null || \
-  echo "note: TOYOS missing FW/WIFI.CFG (iwl cfg=miss; copy from WIFI.CFG.example on stick)"
+ls -lh "$TOY_MNT/FW/WIFI.CFG" "$TOY_MNT/FW/WIFI_H.CFG" "$TOY_MNT/FW/WIFI_C.CFG" 2>/dev/null || \
+  echo "note: TOYOS missing FW/WIFI.CFG (iwl cfg=miss; cp WIFI_H or WIFI_C → WIFI.CFG)"
 echo
 echo "Boot Menu: select this USB (UEFI). Expect GOP desktop / ToyOS ready."
-echo "FW/WIFI.CFG on the stick is preserved across sync (PSK stays on USB only)."
+echo "FW/WIFI*.CFG on the stick is preserved across sync (PSK stays on USB only)."

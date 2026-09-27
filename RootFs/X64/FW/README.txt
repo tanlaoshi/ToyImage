@@ -11,13 +11,17 @@ IWL8265.UCODE
   Guest path: FW/IWL8265.UCODE  (FileSystemReadFile)
 
 WIFI.CFG  (PR-N-wifi-2)
-  Guest path: FW/WIFI.CFG
+  Guest path: FW/WIFI.CFG  (kernel only reads this name)
   Format (THEME.CFG style, one key per line):
     SSID=your-ap-name
     PSK=your-wpa2-passphrase
   Example only (no real secrets): WIFI.CFG.example
-  Real classroom WIFI.CFG stays on the USB stick — do not commit passwords.
-  sync-usb preserves FW/WIFI.CFG on TOYOS (exclude + no overwrite).
+  Real profiles stay on the USB stick — do not commit passwords.
+  Suggested stick layout (PSK never in git):
+    FW/WIFI_H.CFG  — home AP
+    FW/WIFI_C.CFG  — company / classroom AP
+    FW/WIFI.CFG    — active copy:  cp WIFI_H.CFG WIFI.CFG   (or WIFI_C)
+  sync-usb preserves FW/WIFI.CFG and FW/WIFI_[HC].CFG on TOYOS.
   Missing CFG / bad PSK / no AP → soft-fail; desktop OK; no NetAttachNic.
   Driver never prints PSK to serial.
 
