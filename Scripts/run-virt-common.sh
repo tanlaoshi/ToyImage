@@ -252,52 +252,53 @@ toy_virt_run_interactive() {
 
 toy_virt_smoke_ok() {
     local Out="$1"
-    if ! grep -qE 'user: (back in EL1|back in S-mode|EL0 syscall ok|U-mode syscall ok)' "$Out" 2>/dev/null; then
+    # BootLog 现行为 `[Mod] Gui` / `Boot: VirtIO-Net` 等 Title Case；匹配一律 -i
+    if ! grep -qiE 'user: (back in EL1|back in S-mode|EL0 syscall ok|U-mode syscall ok)' "$Out" 2>/dev/null; then
         return 1
     fi
-    if ! grep -qE 'ToyOS ready|ToyOS 就绪' "$Out" 2>/dev/null; then
+    if ! grep -qiE 'ToyOS ready|ToyOS 就绪' "$Out" 2>/dev/null; then
         return 1
     fi
     if [ "$TOY_VIRT_MODE" = "serial" ]; then
-        grep -q 'virt: serial shell' "$Out" 2>/dev/null && return 0
+        grep -qi 'virt: serial shell' "$Out" 2>/dev/null && return 0
         return 1
     fi
     # headless 桌面：gui + net（N10）+（有盘则挂卷）+ ping 网关
-    if ! grep -q '\[mod\] gui' "$Out" 2>/dev/null; then
+    if ! grep -qiE '\[mod\] gui' "$Out" 2>/dev/null; then
         return 1
     fi
     if [ "${TOY_VIRT_NONET:-0}" != "1" ]; then
-        if ! grep -q '\[mod\] net' "$Out" 2>/dev/null; then
+        if ! grep -qiE '\[mod\] net' "$Out" 2>/dev/null; then
             return 1
         fi
-        if ! grep -qE 'boot: virtio-net' "$Out" 2>/dev/null; then
+        if ! grep -qiE 'boot: virtio-net' "$Out" 2>/dev/null; then
             return 1
         fi
-        if ! grep -q 'reply from' "$Out" 2>/dev/null; then
+        if ! grep -qi 'reply from' "$Out" 2>/dev/null; then
             return 1
         fi
     fi
     if [ "${TOY_VIRT_NODISK:-0}" = "1" ]; then
         return 0
     fi
-    if ! grep -qE 'default=TOYOS|TOYOS:|THEME' "$Out" 2>/dev/null; then
+    if ! grep -qiE 'default=TOYOS|TOYOS:|THEME' "$Out" 2>/dev/null; then
         return 1
     fi
     # PR-A13：真 timer IRQ 横幅
-    if ! grep -aqE 'timer: (Arm64 CNTV\+GIC|RiscV SBI timer) irq' "$Out" 2>/dev/null; then
+    if ! grep -aiqE 'timer: (Arm64 CNTV\+GIC|RiscV SBI timer) irq' "$Out" 2>/dev/null; then
         return 1
     fi
     # PR-A14：默认 -smp 2 见 AP hello + idle1；TOY_VIRT_SMP=1 则 single CPU
     if [ "${TOY_VIRT_SMP:-2}" != "1" ]; then
-        if ! grep -qE 'smp: hello cpu=' "$Out" 2>/dev/null; then
+        if ! grep -qiE 'smp: hello cpu=' "$Out" 2>/dev/null; then
             return 1
         fi
-        if ! grep -qE 'sched: AP entered idle|idle1' "$Out" 2>/dev/null; then
+        if ! grep -qiE 'sched: AP entered idle|idle1' "$Out" 2>/dev/null; then
             return 1
         fi
     fi
     # PR-A12：本 arch exec HELLO.ELF
-    grep -qE 'Hello Ring3' "$Out" 2>/dev/null
+    grep -qiE 'Hello Ring3' "$Out" 2>/dev/null
 }
 
 toy_virt_run_headless() {

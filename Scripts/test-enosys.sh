@@ -26,11 +26,14 @@ cleanup
 log_file -noappend $LOG
 
 set image_root [pwd]
-if {![file exists "$image_root/Scripts/run-split.sh"]} {
+if {[file exists [file join $image_root run-split.sh]]} {
+    # cwd = ToyImage/Scripts（test-all 入口）
+    set image_root [file dirname $image_root]
+} elseif {![file exists [file join $image_root Scripts run-split.sh]]} {
     set image_root [file normalize [file join [pwd] .. ToyImage]]
 }
-if {![file exists "$image_root/Scripts/run-split.sh"]} {
-    send_user "error: ToyImage not found (run from ToyImage or set cwd)\n"
+if {![file exists [file join $image_root Scripts run-split.sh]]} {
+    send_user "error: ToyImage not found (run from ToyImage or ToyImage/Scripts)\n"
     exit 2
 }
 
