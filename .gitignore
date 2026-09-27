@@ -23,3 +23,11 @@ OVMF_VARS.fd
 *.log
 *.tmp
 .DS_Store
+
+# 测试残留（Scripts/test-fs.sh 等运行产生；不进库）
+RootFs/X64/TST.TXT
+RootFs/X64/BIG.TXT
+RootFs/X64/TSTDIR/
+RootFs/X64/tstdir/
+# 嵌套目录测试残留
+RootFs/X64/NestA/
