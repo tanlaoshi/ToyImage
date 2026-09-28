@@ -38,14 +38,19 @@ if [ -f "$ROOT/theme.cfg" ]; then
     rm -f "$ROOT/theme.cfg"
 fi
 if [ ! -f "$ROOT/THEME.CFG" ]; then
+    # 无 mode=：真机 Keep 固件分辨率（PR-BOOT-fast-4）；QEMU 缺 mode= 时 edid 默认 1920x1080
     cat > "$ROOT/THEME.CFG" <<'EOF'
 desktop=808080
 shell=c0c0c0
-font=0
-mode=1920x1080
+font=2
+scale=100
+fade=6
 wallpaper=0
+theme=default
+deskgrad=0
+theme.effects=low
 EOF
-    if [ "${TOY_QEMU_VERBOSE:-0}" = 1 ]; then echo "Prepared THEME.CFG -> $ROOT/ (default 1920x1080, solid grey)"; fi
+    if [ "${TOY_QEMU_VERBOSE:-0}" = 1 ]; then echo "Prepared THEME.CFG -> $ROOT/ (no mode=, solid grey)"; fi
 fi
 chmod u+rw "$ROOT/THEME.CFG" "$ROOT/TOYOS.DB" 2>/dev/null || true
 if [ -f "$ROOT/THEME.CFG" ] && [ ! -w "$ROOT/THEME.CFG" ]; then
