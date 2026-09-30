@@ -62,14 +62,12 @@ mkdir -p "$ROOT/Assets/Icons" "$ROOT/Assets/Images"
 if [ -d Assets ]; then
     cp -a Assets/. "$ROOT/Assets/"
 fi
-# 商店权威源：ToyKernel/Assets/Store（覆盖 Image 种子与陈旧 StoreCache catalog）
-if [ -d ../ToyKernel/Assets/Store ]; then
-    mkdir -p "$ROOT/Assets/Store" "$ROOT/StoreCache"
-    cp -a ../ToyKernel/Assets/Store/. "$ROOT/Assets/Store/"
-    if [ -f ../ToyKernel/Assets/Store/catalog.txt ]; then
-        cp -f ../ToyKernel/Assets/Store/catalog.txt "$ROOT/StoreCache/catalog.txt"
-    fi
+# 商店权威源：ToyKernel/Store → Guest Store/（store-src；废 Assets/Store + StoreCache）
+if [ -d ../ToyKernel/Store ]; then
+    mkdir -p "$ROOT/Store"
+    cp -a ../ToyKernel/Store/. "$ROOT/Store/"
 fi
+rm -rf "$ROOT/Assets/Store" "$ROOT/StoreCache"
 # 无线固件（PR-N-wifi-1）：须随 TOYOS 进 U 盘；缺则 iwl fw=miss
 if [ ! -f "$ROOT/FW/IWL8265.UCODE" ]; then
     echo "warning: $ROOT/FW/IWL8265.UCODE missing — sync-usb will warn; NUC iwl needs it" >&2
@@ -96,12 +94,11 @@ if [ -d ../ToyKernel/Assets/Packs ]; then
     cp -a ../ToyKernel/Assets/Packs/. "$ROOT/Assets/Packs/" 2>/dev/null || true
 fi
 
-# Guest 可写占位；已装 Apps/StoreCache 与根目录 ELF 对齐（防旧号段残留）
-mkdir -p "$ROOT/Apps" "$ROOT/StoreCache"
+# Guest 可写占位；已装 Apps 与根目录 ELF 对齐（防旧号段残留）
+mkdir -p "$ROOT/Apps" "$ROOT/Store"
 if [ -f "$ROOT/HELLO.ELF" ]; then
     mkdir -p "$ROOT/Apps/hello"
     cp -f "$ROOT/HELLO.ELF" "$ROOT/Apps/hello/HELLO.ELF"
-    cp -f "$ROOT/HELLO.ELF" "$ROOT/StoreCache/HELLO.ELF"
 fi
 if [ -f "$ROOT/GUIDEMO.ELF" ]; then
     mkdir -p "$ROOT/Apps/guidemo"

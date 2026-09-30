@@ -58,9 +58,9 @@ if [ ! -f "$ROOT/Assets/Fonts/VGA8X16.FNT" ] && [ -d Assets/Fonts ]; then
     mkdir -p "$ROOT/Assets/Fonts"
     cp -a Assets/Fonts/. "$ROOT/Assets/Fonts/"
 fi
-if [ ! -f "$ROOT/Assets/Store/catalog.txt" ] && [ -d Assets/Store ]; then
-    mkdir -p "$ROOT/Assets/Store"
-    cp -a Assets/Store/. "$ROOT/Assets/Store/"
+if [ ! -f "$ROOT/Store/catalog.txt" ] && [ -d Store ]; then
+    mkdir -p "$ROOT/Store"
+    cp -a Store/. "$ROOT/Store/"
 fi
 # ToyKernel Assets 兜底
 if [ ! -f "$ROOT/Assets/Images/WALL.BMP" ] && [ -f ../ToyKernel/Assets/Images/WALL.BMP ]; then
@@ -79,12 +79,13 @@ if [ ! -f "$ROOT/Assets/Fonts/VGA8X16.FNT" ] && [ -d ../ToyKernel/Assets/Fonts ]
     mkdir -p "$ROOT/Assets/Fonts"
     cp -a ../ToyKernel/Assets/Fonts/. "$ROOT/Assets/Fonts/"
 fi
-if [ ! -f "$ROOT/Assets/Store/catalog.txt" ] && [ -d ../ToyKernel/Assets/Store ]; then
-    mkdir -p "$ROOT/Assets/Store"
-    cp -a ../ToyKernel/Assets/Store/. "$ROOT/Assets/Store/"
+if [ ! -f "$ROOT/Store/catalog.txt" ] && [ -d ../ToyKernel/Store ]; then
+    mkdir -p "$ROOT/Store"
+    cp -a ../ToyKernel/Store/. "$ROOT/Store/"
 fi
-mkdir -p "$ROOT/Assets/Icons" "$ROOT/Assets/Locale" "$ROOT/Assets/Fonts" "$ROOT/Assets/Store"
-mkdir -p "$ROOT/Apps" "$ROOT/StoreCache"
+mkdir -p "$ROOT/Assets/Icons" "$ROOT/Assets/Locale" "$ROOT/Assets/Fonts"
+mkdir -p "$ROOT/Apps" "$ROOT/Store"
+rm -rf "$ROOT/Assets/Store" "$ROOT/StoreCache"
 rm -f "$ROOT/WALL.BMP"
 
 # PR-A12：本 arch 用户 HELLO 覆盖盘上的 x86 机型

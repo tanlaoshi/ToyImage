@@ -2,6 +2,10 @@
 
 QEMU user 网关下，Guest 默认仓库为 `10.0.2.2:8080`（宿主本机）。
 
+**局域网台式机 → NUC**：优先用 ToyKernel  
+`./Tools/Scripts/export-store-lan.sh` / `serve-store-lan.sh`  
+（见 `Documents/开发/局域网商店与聊天.md`）。本目录仍作 QEMU 小夹具。
+
 ```bash
 cd ToyImage/store-repo
 python3 -m http.server 8080
