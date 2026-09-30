@@ -62,6 +62,14 @@ mkdir -p "$ROOT/Assets/Icons" "$ROOT/Assets/Images"
 if [ -d Assets ]; then
     cp -a Assets/. "$ROOT/Assets/"
 fi
+# 商店权威源：ToyKernel/Assets/Store（覆盖 Image 种子与陈旧 StoreCache catalog）
+if [ -d ../ToyKernel/Assets/Store ]; then
+    mkdir -p "$ROOT/Assets/Store" "$ROOT/StoreCache"
+    cp -a ../ToyKernel/Assets/Store/. "$ROOT/Assets/Store/"
+    if [ -f ../ToyKernel/Assets/Store/catalog.txt ]; then
+        cp -f ../ToyKernel/Assets/Store/catalog.txt "$ROOT/StoreCache/catalog.txt"
+    fi
+fi
 # 无线固件（PR-N-wifi-1）：须随 TOYOS 进 U 盘；缺则 iwl fw=miss
 if [ ! -f "$ROOT/FW/IWL8265.UCODE" ]; then
     echo "warning: $ROOT/FW/IWL8265.UCODE missing — sync-usb will warn; NUC iwl needs it" >&2
@@ -82,10 +90,6 @@ fi
 if [ ! -f "$ROOT/Assets/Fonts/VGA8X16.FNT" ] && [ -d ../ToyKernel/Assets/Fonts ]; then
     mkdir -p "$ROOT/Assets/Fonts"
     cp -a ../ToyKernel/Assets/Fonts/. "$ROOT/Assets/Fonts/"
-fi
-if [ ! -f "$ROOT/Assets/Store/catalog.txt" ] && [ -d ../ToyKernel/Assets/Store ]; then
-    mkdir -p "$ROOT/Assets/Store"
-    cp -a ../ToyKernel/Assets/Store/. "$ROOT/Assets/Store/"
 fi
 mkdir -p "$ROOT/Assets/Packs"
 if [ -d ../ToyKernel/Assets/Packs ]; then

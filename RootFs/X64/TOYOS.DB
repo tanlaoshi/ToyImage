@@ -13,4 +13,7 @@ lang=en
 fade=6
 wallpaper=1
 theme=default
-deskgrad
+si.hello=app|HELLO.ELF
+sd.hello=-
+si.guidemo=app|GUIDEMO.ELF
+si.snake=app|SNAKE.ELF
