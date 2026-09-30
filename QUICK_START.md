@@ -11,7 +11,7 @@
 | `Esp/X64/` | x86 ESP（`EFI/BOOT/BOOTX64.EFI`） |
 | `Fw/` | OVMF 变量盘种子（`OVMF_VARS.fd.clean`） |
 | `Fixtures/` | 课堂夹具（`msc-stick/`、`store-repo/`） |
-| `Scripts/` | 构建辅助 / QEMU / 冒烟 / U 盘 |
+| `Scripts/` | 构建辅助 / QEMU / 冒烟 / **sync-nuc（SSD）** / **sync-usb（U 盘备选）** |
 
 ### 双盘 QEMU（x86）
 
@@ -76,10 +76,23 @@ dns 10.0.2.2
 exec NETLIB.ELF
 ```
 
-## 真机 U 盘（PR-H0）
+## 真机刷盘（NUC SSD 日常 · U 盘备选）
+
+| 脚本 | 目标 | 说明 |
+|------|------|------|
+| `./Scripts/sync-nuc.sh` | 本机 `LABEL=ToyOS` | **日常**；`--boot` → `/boot/efi/EFI/toyos/BOOTX64.EFI` |
+| `./Scripts/sync-usb.sh` | U 盘 ESP+TOYOS | **备选**；勿用来刷本机 `/boot/efi` |
 
 ```bash
+# NUC SSD
+./Scripts/sync-nuc.sh
+./Scripts/sync-nuc.sh --boot              # 更新 chainloader（常需 sudo）
+./Scripts/sync-nuc.sh --kernel-only       # 只刷 Kernel.elf + FW/
+
+# U 盘备选
 ./Scripts/make-usb-stick.sh --device /dev/sdX --yes --sync
-./Scripts/sync-usb.sh              # 同步 Boot + RootFs/X64
-./Scripts/sync-usb.sh --kernel-only  # 只刷 Kernel.elf
+./Scripts/sync-usb.sh
+./Scripts/sync-usb.sh --kernel-only
 ```
+
+细布局见 ToyKernel `HAL/X64/NOTES-UEFI-PC.md` §2；路线图暗号 **TBN** / **TBU**。
