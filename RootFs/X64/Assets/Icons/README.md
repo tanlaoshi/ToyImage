@@ -27,16 +27,13 @@ ISC 允许商用/修改；保留 Lucide 版权声明见 [`LICENSE-Lucide.txt`](L
 | `FILES.BMP` | Files + 开始菜单项 |
 | `START.BMP` | 任务栏「开始」钮（缩放到 20×20） |
 | `NET.BMP` | 网络（预留） |
-| `POWER.BMP` | 开始菜单「关机」 |
-| `REBOOT.BMP` | 开始菜单「重启」（循环箭头，与关机区分） |
-| `STORE.BMP` | 桌面商店 |
-| `GAME.BMP` | 桌面贪吃蛇 |
+| `POWER.BMP` | 电源（预留） |
 | `HELP.BMP` / `INFO.BMP` / `HOME.BMP` / `CLOSE.BMP` | 预留 |
 
-运行时：`Desktop.c` 经 `FsReadFile("Assets/Icons/bmp48/…")` + `BmpDecode` 绘制；缺失回退色块。
+运行时：`Desktop.c` 经 `FileSystemReadFile("Assets/Icons/bmp48/…")` + `BmpDecode` 绘制；缺失回退色块。
 
 壁纸仍在 [`../Images/WALL.BMP`](../Images/WALL.BMP)。
 
 ## Guest 资源
 
-`ToyImage/Scripts/prepare-rootfs.sh` 与 `prepare-virt-rootfs.sh` 将本目录同步到 Guest `Assets/Icons/`（与 `Assets/Images/` 同级）。
+`$TOYOS_ROOT/Scripts/prepare-rootfs.sh` 与 `prepare-virt-rootfs.sh` 将本目录同步到 Guest `Assets/Icons/`（与 `Assets/Images/` 同级）。

@@ -1,4 +1,5 @@
-# Virt FAT 镜像（prepare-virt-rootfs 生成）
+# Virt FAT 镜像（prepare-virt-rootfs 生成 → RootFs/<Arch>/disk.img）
+RootFs/*/disk.img
 RootFs/*.img
 
 # virt staging（可再生；仅保留 .gitkeep）
@@ -31,3 +32,8 @@ RootFs/X64/TSTDIR/
 RootFs/X64/tstdir/
 # 嵌套目录测试残留
 RootFs/X64/NestA/
+
+# QEMU / 本地运行残留（勿入库）
+NvVars
+qemu-sc.pid
+/long

@@ -7,4 +7,3 @@ arch=x86_64
 title=Snake
 desktop=yes
 taskbar=yes
-category=game
