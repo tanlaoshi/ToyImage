@@ -1,5 +1,6 @@
 #!/bin/bash
-# sync-kernel-usb.sh — 兼容入口：转发到 sync-usb.sh --kernel-only
+# 兼容入口 → Scripts/lib 或 ToyKernel/OpenBox/Scripts/lib
 set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-exec "$SCRIPT_DIR/sync-usb.sh" --kernel-only "$@"
+# shellcheck source=_exec-lib.sh
+. "$(cd "$(dirname "$0")" && pwd)/_exec-lib.sh"
+toyos_exec_lib "sync-kernel-usb.sh" "$@"

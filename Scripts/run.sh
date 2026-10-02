@@ -1,8 +1,6 @@
 #!/bin/bash
-# 已废弃单盘启动：统一走双盘 run-split.sh（Kernel/THEME 只从第二盘 RootFs/X64 读）
-set -e
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-IMAGE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-cd "$IMAGE_ROOT"
-echo "note: run.sh -> run-split.sh (ESP + RootFs/X64; payloads on disk1 only)" >&2
-exec "$SCRIPT_DIR/run-split.sh" "$@"
+# 兼容入口 → Scripts/lib 或 ToyKernel/OpenBox/Scripts/lib
+set -euo pipefail
+# shellcheck source=_exec-lib.sh
+. "$(cd "$(dirname "$0")" && pwd)/_exec-lib.sh"
+toyos_exec_lib "run.sh" "$@"

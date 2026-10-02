@@ -1,4 +1,4 @@
-# Smoke boot (PR-CI-2：lwIP + ubuntu-24.04；Kernel 推送另由 Kernel build.yml smoke job 覆盖)
+# Smoke boot（并列 ToyKernel+ToyImage；Scripts 薄入口 → OpenBox/lib）
 name: smoke
 
 on:
@@ -6,18 +6,16 @@ on:
   push:
     branches: [master]
     paths:
-      - 'Scripts/run-split.sh'
-      - 'Scripts/toy-qemu-lib.sh'
-      - 'Scripts/smoke-boot.sh'
-      - 'Scripts/prepare-rootfs.sh'
+      - 'Scripts/**'
+      - 'Esp/**'
+      - 'RootFs/X64/THEME.CFG'
       - '.github/workflows/smoke.yml'
   pull_request:
     branches: [master]
     paths:
-      - 'Scripts/run-split.sh'
-      - 'Scripts/toy-qemu-lib.sh'
-      - 'Scripts/smoke-boot.sh'
-      - 'Scripts/prepare-rootfs.sh'
+      - 'Scripts/**'
+      - 'Esp/**'
+      - 'RootFs/X64/THEME.CFG'
       - '.github/workflows/smoke.yml'
 
 jobs:
@@ -49,11 +47,13 @@ jobs:
 
       - name: Build kernel into ToyImage
         run: |
+          export TOYOS_ROOT="$GITHUB_WORKSPACE"
           cd ToyKernel
           ./build.sh x86_64
           test -f ../ToyImage/RootFs/X64/Kernel.elf
 
       - name: Smoke boot (TOY_SMP=1)
         run: |
+          export TOYOS_ROOT="$GITHUB_WORKSPACE"
           cd ToyImage
           TOY_SMP=1 SMOKE_TIMEOUT=120 ./Scripts/smoke-boot.sh
